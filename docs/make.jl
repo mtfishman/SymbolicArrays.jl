@@ -13,6 +13,7 @@ makedocs(;
     assets=String[],
   ),
   pages=["Home" => "index.md"],
+  warnonly=(:missing_docs,)
 )
 
 deploydocs(; repo="github.com/mtfishman/SymbolicArrays.jl", devbranch="main")
