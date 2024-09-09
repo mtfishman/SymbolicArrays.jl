@@ -29,7 +29,7 @@ expand(r)
 
 # This README was generated directly from
 # [this source file](https://github.com/mtfishman/SymbolicArrays.jl/blob/main/examples/README.jl)
-# running these commands from the package root of Literate.jl:
+# running these commands from the package root of SymbolicArrays.jl:
 
 # ```julia
 # using Literate: Literate
