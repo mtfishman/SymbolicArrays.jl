@@ -40,7 +40,7 @@ expand(r)
 
 # One goal will be to visualize an expression tree/directed acyclic graph (DAG) of tensor operations:
 # 1. using `AbstractTrees.print_tree` from [AbstractTrees.jl](https://github.com/JuliaCollections/AbstractTrees.jl).
-# This will require creating a `SymbolicArraysAbstractTreesExt` with overloads of `AbstractTrees.children` in terms
+# This will require creating a `SymbolicArraysAbstractTreesExt` package extension with overloads of `AbstractTrees.children` in terms
 # of the arguments and `AbstractTrees.nodevalue` in terms of the operation (i.e. `*` or `+`). See
 # [SimpleExpressionsAbstractTreesExt](https://github.com/jverzani/SimpleExpressions.jl/blob/main/ext/SimpleExpressionsAbstractTreesExt.jl)
 # as a reference, and
@@ -56,7 +56,7 @@ expand(r)
 # Currently the package only supports expanding subexpressions which are sums of tensors into
 # outer sums of tensor contractions using the `SymbolicArrays.expand` function.
 # The goal is to support a wider range of code transformations, such as:
-# 1. optimizing the contraction sequences/paths of a tensor networks (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
+# 1. optimizing the contraction sequences/paths of tensor networks (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
 # [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl), [cotengra](https://github.com/jcmgray/cotengra), etc.),
 # 2. computing first and higher order derivatives of tensor networks (see [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
 # 3. common subexpression elimination (see [CommonSubexpressions.jl](https://github.com/rdeits/CommonSubexpressions.jl)),
