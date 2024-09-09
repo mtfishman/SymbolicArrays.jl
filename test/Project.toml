@@ -1,0 +1,5 @@
+[deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
+SymbolicArrays = "89b603bc-5db9-4369-8dcc-3f453fd67cca"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
