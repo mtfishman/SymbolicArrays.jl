@@ -52,6 +52,8 @@ print_tree(expand(r))
 # 7. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
 # `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
 # `optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))),
+# 8. define some special symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, unitary
+# tensors, diagonal tensors, symmetric tensors, etc.,
 #
 # and more.
 
