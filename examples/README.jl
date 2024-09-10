@@ -9,6 +9,7 @@
 
 # ## Introduction
 
+using AbstractTrees: print_tree
 using SymbolicArrays: SymbolicArray, expand
 
 # 2×2 symbolic arrays/matrices `a` and `b`:
@@ -22,29 +23,43 @@ i, j, k, l, m = :i, :j, :k, :l, :m
 # Example of a tensor expression involving contractions
 # and sums of tensors:
 r = (a(i, j) * a(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
+print_tree(r)
 
 # Expand the sums in the expression to generate
 # a sum of tensor network contractions:
-expand(r)
+print_tree(expand(r))
 
 # In the future we plan to support other expression manipulations, such as `substitute`
 # (similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
 # for substituting a tensor/subexpression with a new tensor/subexpression, contraction sequence
 # optimization, and differentiation.
 
-# Additionally, some basic operations like subtraction, division by scalars, and complex conjugation are missing.
-
 # ## Plans
+
+# ### Basic operations and modifications to implement
+
+# The following still need to be implemented:
+# 1. subtraction of tensors (`a(i, j) - b(i, j)`),
+# 2. division of tensors by scalars (`a(i, j) / 2`),
+# 3. complex conjugation of tensors (`conj(a(i, j))` and `dag(a(i, j))` for flipping from contravariant to covariant dimensions),
+# 4. change the storage of sum arguments from `Set` to `Vector`,
+# 5. make `TensorExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype, maybe rename `SymbolicNamedDimArray`,
+# 6. `coeff(t::TensorExpr.Type, s::TensorExpr.Type)` to get the coefficient of an argument/term,
+# 7. `substitute(t::TensorExpr.Type, dict::Dict)` for replacing a subexpression with another expression,
+# 8. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
+# `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
+# `optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))`),
+# 9. measurements of complexity/computational cost (`cost`, `flops`/`removedsize`
+# ([EinExprs.jl](https://bsc-quantic.github.io/EinExprs.jl/stable/counters)),
+# `time_complexity`/`space_complexity` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
+# )
+# and more.
 
 # ### Visualization
 
-# One goal will be to visualize an expression tree/directed acyclic graph (DAG) of tensor operations:
-# 1. using `AbstractTrees.print_tree` from [AbstractTrees.jl](https://github.com/JuliaCollections/AbstractTrees.jl).
-# This will require creating a `SymbolicArraysAbstractTreesExt` package extension with overloads of `AbstractTrees.children` in terms
-# of the arguments and `AbstractTrees.nodevalue` in terms of the operation (i.e. `*` or `+`). See
-# [SimpleExpressionsAbstractTreesExt](https://github.com/jverzani/SimpleExpressions.jl/blob/main/ext/SimpleExpressionsAbstractTreesExt.jl)
-# as a reference, and
-# 2. using [GraphMakie.jl](https://graph.makie.org/stable/generated/syntaxtree) to visualization the tensor expression
+# Currently you can visualize an expression tree/directed acyclic graph (DAG) of tensor operations using
+# `AbstractTrees.print_tree` as shown above. In addition, the goal will be to support using
+# [GraphMakie.jl](https://graph.makie.org/stable/generated/syntaxtree) to visualize the tensor expression
 # as a graph by converting the expression tree/DAG to a graph. See [this section](https://graph.makie.org/stable/generated/syntaxtree)
 # of the `GraphMakie.jl` documentation as a reference, as well as [TreeView.jl](https://github.com/JuliaTeX/TreeView.jl)
 # which visualizes Julia expressions using TikZ. Also see [this code](https://github.com/ITensor/ITensorVisualizationBase.jl/blob/v0.1.11/src/visualize.jl#L62-L102)
@@ -96,6 +111,5 @@ expand(r)
 # running these commands from the package root of SymbolicArrays.jl:
 
 # ```julia
-# using Literate: Literate
-# Literate.markdown("examples/README.jl", "."; flavor=Literate.CommonMarkFlavor(), execute=true)
+# import Pkg, Literate; Pkg.activate("examples"); Literate.markdown("examples/README.jl", "."; flavor=Literate.CommonMarkFlavor(), execute=true)
 # ```
