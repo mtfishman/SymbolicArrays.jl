@@ -76,6 +76,7 @@ print_tree(expand(r))
 # 2. computing first and higher order derivatives of tensor networks (see [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
 # 3. common subexpression elimination (see [CommonSubexpressions.jl](https://github.com/rdeits/CommonSubexpressions.jl)),
 # 4. parallelization over independent operations (see [Dagger.jl](https://github.com/JuliaParallel/Dagger.jl)),
+#
 # and more.
 
 # Related projects for symbolic manipulations in Julia include [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl),
