@@ -44,7 +44,7 @@ print_tree(expand(r))
 # 3. complex conjugation of tensors (`conj(a(i, j))` and `dag(a(i, j))` for flipping from contravariant to covariant dimensions),
 # 4. change the storage of sum arguments from `Set` to `Vector`,
 # 5. make `TensorExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype, maybe rename `SymbolicNamedDimArray`,
-# 6. `coeff(t::TensorExpr.Type, s::TensorExpr.Type)` to get the coefficient of a term,
+# 6. `coeff(t::TensorExpr.Type, s::TensorExpr.Type)` to get the coefficient of an argument/term,
 # 7. `substitute(t::TensorExpr.Type, dict::Dict)` for replacing a subexpression with another expression,
 # 8. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
 # `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
@@ -57,13 +57,9 @@ print_tree(expand(r))
 
 # ### Visualization
 
-# One goal will be to visualize an expression tree/directed acyclic graph (DAG) of tensor operations:
-# 1. using `AbstractTrees.print_tree` from [AbstractTrees.jl](https://github.com/JuliaCollections/AbstractTrees.jl).
-# This will require creating a `SymbolicArraysAbstractTreesExt` package extension with overloads of `AbstractTrees.children` in terms
-# of the arguments and `AbstractTrees.nodevalue` in terms of the operation (i.e. `*` or `+`). See
-# [SimpleExpressionsAbstractTreesExt](https://github.com/jverzani/SimpleExpressions.jl/blob/main/ext/SimpleExpressionsAbstractTreesExt.jl)
-# as a reference, and
-# 2. using [GraphMakie.jl](https://graph.makie.org/stable/generated/syntaxtree) to visualization the tensor expression
+# Currently you can visualize an expression tree/directed acyclic graph (DAG) of tensor operations using
+# `AbstractTrees.print_tree` as shown above. In addition, the goal will be to support using
+# [GraphMakie.jl](https://graph.makie.org/stable/generated/syntaxtree) to visualize the tensor expression
 # as a graph by converting the expression tree/DAG to a graph. See [this section](https://graph.makie.org/stable/generated/syntaxtree)
 # of the `GraphMakie.jl` documentation as a reference, as well as [TreeView.jl](https://github.com/JuliaTeX/TreeView.jl)
 # which visualizes Julia expressions using TikZ. Also see [this code](https://github.com/ITensor/ITensorVisualizationBase.jl/blob/v0.1.11/src/visualize.jl#L62-L102)
@@ -115,6 +111,5 @@ print_tree(expand(r))
 # running these commands from the package root of SymbolicArrays.jl:
 
 # ```julia
-# using Literate: Literate
-# Literate.markdown("examples/README.jl", "."; flavor=Literate.CommonMarkFlavor(), execute=true)
+# import Pkg, Literate; Pkg.activate("examples"); Literate.markdown("examples/README.jl", "."; flavor=Literate.CommonMarkFlavor(), execute=true)
 # ```
