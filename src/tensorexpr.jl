@@ -6,7 +6,7 @@ using ..NamedIntegers: NamedIntegers, NamedInteger, name, named, unname
 
 # TODO: Parametrize by Tensor name, namedsize, coefficient
 # types, etc.
-@data TensorExpr begin
+@data TensorExpr <: AbstractArray{Any,Any} begin
   struct Tensor
     name::Any
     namedsize::Vector{NamedInteger}
@@ -125,6 +125,9 @@ function arguments_sum(t::TensorExpr.Type)
   end
 end
 
+"""
+The coefficient of a tensor.
+"""
 function coefficient(t::TensorExpr.Type)
   return @match t begin
     TensorExpr.Scale(; coefficient) => coefficient
@@ -133,6 +136,17 @@ function coefficient(t::TensorExpr.Type)
   end
 end
 
+"""
+The coefficient of an unscaled term in a sum.
+"""
+function coefficient(t::TensorExpr.Type, arg::TensorExpr.Type)
+  return coefficients(t)[arg]
+end
+
+"""
+A dictionary from unscaled arguments/terms of a sum
+to their corresponding coefficients.
+"""
 function coefficients(t::TensorExpr.Type)
   return @match t begin
     TensorExpr.Sum(; coefficients) => coefficients
@@ -173,13 +187,6 @@ function Base.:*(c::Number, t::TensorExpr.Type)
   end
 end
 
-function add_tensor_sum(t1, t2)
-  c1 = coefficient(t1)
-  ut1 = unscale(t1)
-  c2 = coefficient.(arguments(t2))
-  return ut2 = unscale.(arguments(t2))
-end
-
 # Assumes scalar multiplication is commutative.
 # TODO: Make a definition which accounts for numbers that
 # don't have commutative multiplication.
@@ -187,12 +194,18 @@ function Base.:*(t::TensorExpr.Type, c::Number)
   return c * t
 end
 
+Base.:-(t::TensorExpr.Type) = -1 * t
+
+function Base.:/(t::TensorExpr.Type, c::Number)
+  return t * inv(c)
+end
+
 function isequal_tensors(t1, t2)
   return name(t1) == name(t2) && namedsize(t1) == namedsize(t2)
 end
 
 function isequal_arguments(t1, t2)
-  return leaf_arguments(t1) == leaf_arguments(t2)
+  return issetequal(leaf_arguments(t1), leaf_arguments(t2))
 end
 
 function isequal_single_argument(t1, t2)
@@ -206,13 +219,23 @@ function isequal_scales(t1, t2)
   return (coefficient(t1) == coefficient(t2)) && (unscale(t1) == unscale(t2))
 end
 
+# TODO: How should this be defined? Equality of expressions is nontrivial:
+# https://github.com/JuliaSymbolics/Symbolics.jl/issues/492
+# https://www.stochasticlifestyle.com/useful-algorithms-that-are-not-optimized-by-jax-pytorch-or-tensorflow
+# https://docs.sciml.ai/Symbolics/stable/manual/faq/#Equality-and-set-membership-tests
+# https://discourse.julialang.org/t/checking-for-equality-and-for-equivalence-of-symbolic-expressions/61276
+# https://discourse.julialang.org/t/when-are-two-expressions-equal/87045
+# Maybe we should use `isequal` instead, like `Symbolics.jl` does.
+# Also, consider calling `expand` on both sides of the equality first to try
+# to canonicalize the expressions as much as possible.
 function Base.:(==)(t1::TensorExpr.Type, t2::TensorExpr.Type)
   return @match (t1, t2) begin
     (TensorExpr.Tensor(), TensorExpr.Tensor()) => isequal_tensors(t1, t2)
-    (TensorExpr.Scale(), _) => isequal_scales(t1, t2)
-    (_, TensorExpr.Scale()) => isequal_scales(t1, t2)
-    (TensorExpr.Contract(), TensorExpr.Contract()) => isequal_arguments(t1, t2)
-    (TensorExpr.Sum(), TensorExpr.Sum()) => isequal_arguments(t1, t2)
+    (TensorExpr.Scale(), TensorExpr.Scale()) ||
+      (TensorExpr.Scale(), TensorExpr.Tensor()) ||
+      (TensorExpr.Tensor(), TensorExpr.Scale()) => isequal_scales(t1, t2)
+    (TensorExpr.Contract(), TensorExpr.Contract()) ||
+      (TensorExpr.Sum(), TensorExpr.Sum()) => isequal_arguments(t1, t2)
     (_, _) => isequal_single_argument(t1, t2)
   end
 end
@@ -247,11 +270,18 @@ function Base.:+(t1::TensorExpr.Type, t2::TensorExpr.Type)
   dimnames(t1) == dimnames(t2) || throw(ErrorException("Dimension names must match."))
   # TODO: Handle when t1 == t2 (combine into arguments with coefficients), combining sums, etc.
   return @match (t1, t2) begin
+    (t, t) => 2t
     (TensorExpr.Sum(), TensorExpr.Sum()) => add_sums(t1, t2)
     (TensorExpr.Sum(), _) => t1 + TensorExpr.Sum(Set([t2]))
     (_, TensorExpr.Sum()) => TensorExpr.Sum(Set([t1])) + t2
-    (t, t) => 2t
     _ => TensorExpr.Sum(Set([t1, t2]))
+  end
+end
+
+function Base.:-(t1::TensorExpr.Type, t2::TensorExpr.Type)
+  return @match (t1, t2) begin
+    (t, t) => 0t
+    _ => t1 + -t2
   end
 end
 
@@ -289,13 +319,39 @@ function expand(t::TensorExpr.Type)
   end
 end
 
-function substitute(t::TensorExpr.Type)
-  @match t begin
-    TensorExpr.Contract() => expand_contract(t)
-    TensorExpr.Sum() => expand_sum(t)
-    TensorExpr.Scale() => expand_scale(t)
-    _ => t
-  end
+"""
+Substitute the specified subexpression for a new one.
+"""
+function substitute(t::TensorExpr.Type, subs)
+  return error("Not implemented.")
+end
+
+"""
+The time complexity of the head/root expression.
+
+To get the total complexity of the full expression,
+walk the expression tree. See:
+https://docs.juliahub.com/General/EinExprs/stable/counters
+https://github.com/JuliaCollections/AbstractTrees.jl
+https://github.com/chengchingwen/StructWalk.jl
+https://github.com/FluxML/Functors.jl
+"""
+function time_complexity(t::TensorExpr.Type)
+  return error("Not implemented.")
+end
+
+"""
+The space complexity of the head/root expression.
+
+To get the total complexity of the full expression,
+walk the expression tree. See:
+https://docs.juliahub.com/General/EinExprs/stable/counters
+https://github.com/JuliaCollections/AbstractTrees.jl
+https://github.com/chengchingwen/StructWalk.jl
+https://github.com/FluxML/Functors.jl
+"""
+function space_complexity(t::TensorExpr.Type)
+  return error("Not implemented.")
 end
 
 function print_op_arguments(io::IO, f::Function, t)

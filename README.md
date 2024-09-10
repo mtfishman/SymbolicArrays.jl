@@ -101,20 +101,20 @@ optimization, and differentiation.
 ### Basic operations and modifications to implement
 
 The following still need to be implemented:
-1. subtraction of tensors (`a(i, j) - b(i, j)`),
-2. division of tensors by scalars (`a(i, j) / 2`),
-3. complex conjugation of tensors (`conj(a(i, j))` and `dag(a(i, j))` for flipping from contravariant to covariant dimensions),
-4. change the storage of sum arguments from `Set` to `Vector`,
+1. complex conjugation of tensors (`conj(a(i, j))`),
+2. `dag(a(i, j))` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
+3. `substitute(t::TensorExpr.Type, dict::Dict)` for replacing a subexpression with another expression
+(see [Symbolics.substitute](https://symbolics.juliasymbolics.org/stable/manual/expression_manipulation/#SymbolicUtils.substitute)),
+4. change the storage of sum arguments from `Set` to `Vector` (maybe, might make some operations like expression
+comparison slower unless we sort arguments like is done in `Symbolics.jl`, but that may be difficult in general),
 5. make `TensorExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype, maybe rename `SymbolicNamedDimArray`,
-6. `coeff(t::TensorExpr.Type, s::TensorExpr.Type)` to get the coefficient of an argument/term,
-7. `substitute(t::TensorExpr.Type, dict::Dict)` for replacing a subexpression with another expression,
-8. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
-`optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
-`optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))`),
-9. measurements of complexity/computational cost (`cost`, `flops`/`removedsize`
+6. measurements of complexity/computational cost (`cost`, `flops`/`removedsize`
 ([EinExprs.jl](https://bsc-quantic.github.io/EinExprs.jl/stable/counters)),
-`time_complexity`/`space_complexity` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
-)
+`time_complexity`/`space_complexity` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl))),
+7. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
+`optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
+`optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))),
+
 and more.
 
 ### Visualization
@@ -141,12 +141,17 @@ The goal is to support a wider range of code transformations, such as:
 
 and more.
 
-Related projects for symbolic manipulations in Julia include [Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl),
+Related projects for symbolic manipulations in Julia include
+[SymbolicUtils.jl](https://github.com/JuliaSymbolics/SymbolicUtils.jl)/[Symbolics.jl](https://github.com/JuliaSymbolics/Symbolics.jl),
 which is mostly focused on scalar manipulations but has growing support for
 [symbolic array operations](https://symbolics.juliasymbolics.org/stable/manual/arrays/#symbolic_arrays).
 A prominant term rewriting tool in Julia is [Metatheory.jl](https://github.com/JuliaSymbolics/Metatheory.jl).
 We may be able to interface `SymbolicArrays.jl` with `Metatheory.jl` through
 [TermInterface.jl](https://github.com/JuliaSymbolics/TermInterface.jl).
+
+See also [SimpleExpressions.jl](https://github.com/jverzani/SimpleExpressions.jl),
+[DynamicsExpressions.jl](https://github.com/SymbolicML/DynamicExpressions.jl),
+and [CallableExpressions.jl](https://gitlab.com/nsajko/CallableExpressions.jl).
 
 Of course, this is a very ambitious list of goals, and the timeline for implementing them is unclear.
 Additionally, there is clearly a lot of overlap with the goals of this package and existing work,

@@ -1,3 +1,4 @@
+@eval module $(gensym())
 using Aqua: Aqua
 using Moshi.Match: @match
 using SymbolicArrays:
@@ -6,7 +7,6 @@ using SymbolicArrays:
   TensorExpr,
   arguments,
   coefficient,
-  coefficients,
   dimnames,
   expand,
   leaf_arguments,
@@ -33,7 +33,7 @@ using Test: @test, @test_broken, @test_throws, @testset
       _ => false
     end
     @test isone(coefficient(a(i, j)))
-    @test isone(coefficients(a(i, j))[a(i, j)])
+    @test isone(coefficient(a(i, j), a(i, j)))
     @test a(i, j) == a(i, j)
     @test a(i, j) == 1 * a(i, j)
     @test 1 * a(i, j) == a(i, j)
@@ -46,7 +46,7 @@ using Test: @test, @test_broken, @test_throws, @testset
       _ => false
     end
     @test issetequal(arguments(r), [a(i, j), a(j, k)])
-    @test isone(coefficients(r)[r])
+    @test isone(coefficient(r, r))
 
     r = a(i, j) * a(j, k) * a(k, l)
     @test size(r) == [2, 2]
@@ -55,7 +55,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test issetequal(leaf_arguments(r), [a(i, j), a(j, k), a(k, l)])
     @test arguments(r)[1] == a(i, j) * a(j, k)
     @test arguments(r)[2] == a(k, l)
-    @test isone(coefficients(r)[r])
+    @test isone(coefficient(r, r))
 
     r = 2 * a(i, j)
     @test size(r) == [2, 2]
@@ -66,7 +66,29 @@ using Test: @test, @test_broken, @test_throws, @testset
     end
     @test unscale(r) == a(i, j)
     @test coefficient(r) == 2
-    @test coefficients(r)[a(i, j)] == 2
+    @test coefficient(r, a(i, j)) == 2
+
+    r = a(i, j) / 2
+    @test size(r) == [2, 2]
+    @test dimnames(r) == [:i, :j]
+    @test @match r begin
+      TensorExpr.Scale() => true
+      _ => false
+    end
+    @test unscale(r) == a(i, j)
+    @test coefficient(r) ≈ inv(2)
+    @test coefficient(r, a(i, j)) ≈ inv(2)
+
+    r = -a(i, j)
+    @test size(r) == [2, 2]
+    @test dimnames(r) == [:i, :j]
+    @test @match r begin
+      TensorExpr.Scale() => true
+      _ => false
+    end
+    @test unscale(r) == a(i, j)
+    @test coefficient(r) ≈ -1
+    @test coefficient(r, a(i, j)) ≈ -1
 
     r = 3 * (2 * a(i, j))
     @test size(r) == [2, 2]
@@ -77,7 +99,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     end
     @test unscale(r) == a(i, j)
     @test coefficient(r) == 6
-    @test coefficients(r)[a(i, j)] == 6
+    @test coefficient(r, a(i, j)) == 6
 
     α = 3
     for r in (α * a(i, j) * a(j, k), a(i, j) * α * a(j, k), a(i, j) * a(j, k) * α)
@@ -91,8 +113,7 @@ using Test: @test, @test_broken, @test_throws, @testset
       x = unscale(r)
       @test unscale(x) == a(i, j) * a(j, k)
       @test issetequal(arguments(x), [a(i, j), a(j, k)])
-      @test last(only(coefficients(r))) == α
-      @test coefficients(r)[a(i, j) * a(j, k)] == α
+      @test coefficient(r, a(i, j) * a(j, k)) == α
     end
 
     r = a(i, j) + b(i, j)
@@ -101,18 +122,38 @@ using Test: @test, @test_broken, @test_throws, @testset
       TensorExpr.Sum() => true
       _ => false
     end
-    @test isone(coefficients(r)[a(i, j)])
-    @test isone(coefficients(r)[b(i, j)])
+    @test isone(coefficient(r, a(i, j)))
+    @test isone(coefficient(r, b(i, j)))
+
+    r = a(i, j) + b(i, j) - b(i, j)
+    @test issetequal(arguments(r), [1 * a(i, j), 0 * b(i, j)])
+    @test_broken issetequal(arguments(r), [a(i, j), 0 * b(i, j)])
+    @test @match r begin
+      TensorExpr.Sum() => true
+      _ => false
+    end
+    @test isone(coefficient(r, a(i, j)))
+    @test iszero(coefficient(r, b(i, j)))
 
     r = a(i, j) + a(i, j)
-    @test r == 2 * a(i, j)
+    @test r == 2a(i, j)
     @test coefficient(r) == 2
     @test unscale(r) == a(i, j)
     @test @match r begin
       TensorExpr.Scale() => true
       _ => false
     end
-    @test coefficients(r)[a(i, j)] == 2
+    @test coefficient(r, a(i, j)) == 2
+
+    r = a(i, j) - a(i, j)
+    @test r == 0a(i, j)
+    @test iszero(coefficient(r))
+    @test unscale(r) == a(i, j)
+    @test @match r begin
+      TensorExpr.Scale() => true
+      _ => false
+    end
+    @test iszero(coefficient(r, a(i, j)))
 
     @test_throws ErrorException a(i, j) + a(j, k)
 
@@ -121,16 +162,16 @@ using Test: @test, @test_broken, @test_throws, @testset
       TensorExpr.Sum() => true
       _ => false
     end
-    @test isone(coefficients(r)[a(i, j) * a(j, k)])
-    @test isone(coefficients(r)[a(i, k)])
+    @test isone(coefficient(r, a(i, j) * a(j, k)))
+    @test isone(coefficient(r, a(i, k)))
 
     r = 2 * (a(i, j) * a(j, k) + a(i, k))
     @test @match r begin
       TensorExpr.Sum() => true
       _ => false
     end
-    @test coefficients(r)[a(i, j) * a(j, k)] == 2
-    @test coefficients(r)[a(i, k)] == 2
+    @test coefficient(r, a(i, j) * a(j, k)) == 2
+    @test coefficient(r, a(i, k)) == 2
 
     # Regression test for summing more than 2 terms.
     r = a(i, j) + b(i, j) + c(i, j)
@@ -138,9 +179,9 @@ using Test: @test, @test_broken, @test_throws, @testset
       TensorExpr.Sum() => true
       _ => false
     end
-    @test isone(coefficients(r)[a(i, j)])
-    @test isone(coefficients(r)[b(i, j)])
-    @test isone(coefficients(r)[c(i, j)])
+    @test isone(coefficient(r, a(i, j)))
+    @test isone(coefficient(r, b(i, j)))
+    @test isone(coefficient(r, c(i, j)))
 
     r = a(i, j) * a(j, k) + (a(i, j) + b(i, j)) * a(j, k)
     # TODO: Leaving off the coefficient in the second argument
@@ -160,4 +201,5 @@ using Test: @test, @test_broken, @test_throws, @testset
       (a(i, j) * a(j, k)) * (a(k, l) * a(l, m)) +
           (a(i, j) * a(j, k)) * (a(k, l) * b(l, m))
   end
+end
 end
