@@ -9,6 +9,7 @@
 
 # ## Introduction
 
+using AbstractTrees: print_tree
 using SymbolicArrays: SymbolicArray, expand
 
 # 2×2 symbolic arrays/matrices `a` and `b`:
@@ -22,19 +23,37 @@ i, j, k, l, m = :i, :j, :k, :l, :m
 # Example of a tensor expression involving contractions
 # and sums of tensors:
 r = (a(i, j) * a(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
+print_tree(r)
 
 # Expand the sums in the expression to generate
 # a sum of tensor network contractions:
-expand(r)
+print_tree(expand(r))
 
 # In the future we plan to support other expression manipulations, such as `substitute`
 # (similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
 # for substituting a tensor/subexpression with a new tensor/subexpression, contraction sequence
 # optimization, and differentiation.
 
-# Additionally, some basic operations like subtraction, division by scalars, and complex conjugation are missing.
-
 # ## Plans
+
+# ### Basic operations and modifications to implement
+
+# The following still need to be implemented:
+# 1. subtraction of tensors (`a(i, j) - b(i, j)`),
+# 2. division of tensors by scalars (`a(i, j) / 2`),
+# 3. complex conjugation of tensors (`conj(a(i, j))` and `dag(a(i, j))` for flipping from contravariant to covariant dimensions),
+# 4. change the storage of sum arguments from `Set` to `Vector`,
+# 5. make `TensorExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype, maybe rename `SymbolicNamedDimArray`,
+# 6. `coeff(t::TensorExpr.Type, s::TensorExpr.Type)` to get the coefficient of a term,
+# 7. `substitute(t::TensorExpr.Type, dict::Dict)` for replacing a subexpression with another expression,
+# 8. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
+# `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
+# `optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))`),
+# 9. measurements of complexity/computational cost (`cost`, `flops`/`removedsize`
+# ([EinExprs.jl](https://bsc-quantic.github.io/EinExprs.jl/stable/counters)),
+# `time_complexity`/`space_complexity` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
+# )
+# and more.
 
 # ### Visualization
 

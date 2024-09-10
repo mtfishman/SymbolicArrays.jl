@@ -86,10 +86,10 @@ The (tensor) arguments of a tensor contraction or sum.
 """
 function arguments(t::TensorExpr.Type)
   @match t begin
-    TensorExpr.Tensor() => [t]
+    TensorExpr.Tensor() => ()
     TensorExpr.Contract(; arguments) => arguments
     TensorExpr.Sum(; arguments) => arguments
-    TensorExpr.Scale(; term) => arguments(term)
+    TensorExpr.Scale() => (coefficient(t), unscale(t))
   end
 end
 

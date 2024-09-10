@@ -8,7 +8,14 @@ AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 IterTools = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
 
+[weakdeps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
+
+[extensions]
+SymbolicArraysAbstractTreesExt = "AbstractTrees"
+
 [compat]
+AbstractTrees = "0.4"
 Aqua = "0.8"
 AutoHashEquals = "2"
 IterTools = "1"

@@ -1,4 +1,5 @@
 [deps]
+AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
 SymbolicArrays = "89b603bc-5db9-4369-8dcc-3f453fd67cca"
