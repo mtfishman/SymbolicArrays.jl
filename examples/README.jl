@@ -11,7 +11,7 @@
 
 using AbstractTrees: print_tree
 using SymbolicArrays:
-  SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity
+  SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity;
 
 # 2×2 symbolic arrays/matrices `a` and `b`:
 a = SymbolicArray(:a, 2, 2)
