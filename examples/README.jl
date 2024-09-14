@@ -37,7 +37,8 @@ print_tree(expand(r))
 
 print_tree(flatten_expression(r))
 
-# Optimize the order of evaluation of the expression:
+# Optimize the evaluation order of the expression (by default uses an
+# eager optimizer, which isn't always optimal):
 
 a = SymbolicArray(:a, 2, 3)
 b = SymbolicArray(:b, 3, 2)
@@ -53,7 +54,7 @@ time_complexity(r_opt)
 
 # In the future we plan to support other expression manipulations, such as `substitute`
 # (similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
-# for substituting a subexpression with a new subexpression, more expression order
+# for substituting a subexpression with a new subexpression, more evaluation order
 # optimization backends, and symbolic differentiation.
 
 # ## Plans

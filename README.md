@@ -15,6 +15,16 @@ using SymbolicArrays:
   SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity;
 ````
 
+````
+Precompiling SymbolicArrays
+  ✓ SymbolicArrays
+  1 dependency successfully precompiled in 2 seconds. 6 already precompiled.
+Precompiling SymbolicArraysAbstractTreesExt
+  ✓ SymbolicArrays → SymbolicArraysAbstractTreesExt
+  1 dependency successfully precompiled in 1 seconds. 8 already precompiled.
+
+````
+
 Construct 2×2 symbolic arrays/matrices `a` and `b`:
 
 ````julia
@@ -109,7 +119,8 @@ print_tree(flatten_expression(r))
 
 ````
 
-Optimize the order of evaluation of the expression:
+Optimize the evaluation order of the expression (by default uses an
+eager optimizer, which isn't always optimal):
 
 ````julia
 a = SymbolicArray(:a, 2, 3)
@@ -163,7 +174,7 @@ time_complexity(r_opt)
 
 In the future we plan to support other expression manipulations, such as `substitute`
 (similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
-for substituting a subexpression with a new subexpression, more expression order
+for substituting a subexpression with a new subexpression, more evaluation order
 optimization backends, and symbolic differentiation.
 
 ## Plans
