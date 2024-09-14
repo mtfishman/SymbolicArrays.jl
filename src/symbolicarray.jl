@@ -26,5 +26,5 @@ end
 # TODO: Move to `SymbolicArraysSymbolicTensorsExt`.
 function (a::SymbolicArray)(dimnames...)
   @assert ndims(a) == length(dimnames)
-  return TensorExpr.Tensor(name(a), named.(size(a), collect(dimnames)))
+  return SymbolicNamedDimArray(name(a), named.(size(a), collect(dimnames)))
 end

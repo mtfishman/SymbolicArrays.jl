@@ -4,12 +4,17 @@ using Moshi.Match: @match
 using SymbolicArrays:
   SymbolicArrays,
   SymbolicArray,
-  TensorExpr,
+  SymbolicNamedDimArray,
+  SymbolicNamedDimArrayContract,
+  SymbolicNamedDimArrayScale,
+  SymbolicNamedDimArraySum,
   arguments,
   coefficient,
   dimnames,
   expand,
+  flatten_expression,
   leaf_arguments,
+  time_complexity,
   unscale
 using Test: @test, @test_broken, @test_throws, @testset
 
@@ -29,7 +34,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test size(a(i, j)) == [2, 2]
     @test dimnames(a(i, j)) == [:i, :j]
     @test @match a(i, j) begin
-      TensorExpr.Tensor() => true
+      SymbolicNamedDimArray() => true
       _ => false
     end
     @test isone(coefficient(a(i, j)))
@@ -42,7 +47,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test size(r) == [2, 2]
     @test dimnames(r) == [:i, :k]
     @test @match r begin
-      TensorExpr.Contract() => true
+      SymbolicNamedDimArrayContract() => true
       _ => false
     end
     @test issetequal(arguments(r), [a(i, j), a(j, k)])
@@ -61,7 +66,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test size(r) == [2, 2]
     @test dimnames(r) == [:i, :j]
     @test @match r begin
-      TensorExpr.Scale() => true
+      SymbolicNamedDimArrayScale() => true
       _ => false
     end
     @test unscale(r) == a(i, j)
@@ -72,7 +77,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test size(r) == [2, 2]
     @test dimnames(r) == [:i, :j]
     @test @match r begin
-      TensorExpr.Scale() => true
+      SymbolicNamedDimArrayScale() => true
       _ => false
     end
     @test unscale(r) == a(i, j)
@@ -83,7 +88,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test size(r) == [2, 2]
     @test dimnames(r) == [:i, :j]
     @test @match r begin
-      TensorExpr.Scale() => true
+      SymbolicNamedDimArrayScale() => true
       _ => false
     end
     @test unscale(r) == a(i, j)
@@ -94,7 +99,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test size(r) == [2, 2]
     @test dimnames(r) == [:i, :j]
     @test @match r begin
-      TensorExpr.Scale() => true
+      SymbolicNamedDimArrayScale() => true
       _ => false
     end
     @test unscale(r) == a(i, j)
@@ -106,7 +111,7 @@ using Test: @test, @test_broken, @test_throws, @testset
       @test size(r) == [2, 2]
       @test dimnames(r) == [:i, :k]
       @test @match r begin
-        TensorExpr.Scale(; term::TensorExpr.Contract()) => true
+        SymbolicNamedDimArrayScale(; term::SymbolicNamedDimArrayContract()) => true
         _ => false
       end
       @test coefficient(r) == α
@@ -119,7 +124,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     r = a(i, j) + b(i, j)
     @test issetequal(arguments(r), [a(i, j), b(i, j)])
     @test @match r begin
-      TensorExpr.Sum() => true
+      SymbolicNamedDimArraySum() => true
       _ => false
     end
     @test isone(coefficient(r, a(i, j)))
@@ -127,9 +132,9 @@ using Test: @test, @test_broken, @test_throws, @testset
 
     r = a(i, j) + b(i, j) - b(i, j)
     @test issetequal(arguments(r), [1 * a(i, j), 0 * b(i, j)])
-    @test_broken issetequal(arguments(r), [a(i, j), 0 * b(i, j)])
+    @test issetequal(arguments(r), [a(i, j), 0 * b(i, j)])
     @test @match r begin
-      TensorExpr.Sum() => true
+      SymbolicNamedDimArraySum() => true
       _ => false
     end
     @test isone(coefficient(r, a(i, j)))
@@ -140,7 +145,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test coefficient(r) == 2
     @test unscale(r) == a(i, j)
     @test @match r begin
-      TensorExpr.Scale() => true
+      SymbolicNamedDimArrayScale() => true
       _ => false
     end
     @test coefficient(r, a(i, j)) == 2
@@ -150,7 +155,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test iszero(coefficient(r))
     @test unscale(r) == a(i, j)
     @test @match r begin
-      TensorExpr.Scale() => true
+      SymbolicNamedDimArrayScale() => true
       _ => false
     end
     @test iszero(coefficient(r, a(i, j)))
@@ -159,7 +164,7 @@ using Test: @test, @test_broken, @test_throws, @testset
 
     r = a(i, j) * a(j, k) + a(i, k)
     @test @match r begin
-      TensorExpr.Sum() => true
+      SymbolicNamedDimArraySum() => true
       _ => false
     end
     @test isone(coefficient(r, a(i, j) * a(j, k)))
@@ -167,7 +172,7 @@ using Test: @test, @test_broken, @test_throws, @testset
 
     r = 2 * (a(i, j) * a(j, k) + a(i, k))
     @test @match r begin
-      TensorExpr.Sum() => true
+      SymbolicNamedDimArraySum() => true
       _ => false
     end
     @test coefficient(r, a(i, j) * a(j, k)) == 2
@@ -176,17 +181,19 @@ using Test: @test, @test_broken, @test_throws, @testset
     # Regression test for summing more than 2 terms.
     r = a(i, j) + b(i, j) + c(i, j)
     @test @match r begin
-      TensorExpr.Sum() => true
+      SymbolicNamedDimArraySum() => true
       _ => false
     end
     @test isone(coefficient(r, a(i, j)))
     @test isone(coefficient(r, b(i, j)))
     @test isone(coefficient(r, c(i, j)))
 
+    @test 1 * a(i, j) * a(j, k) == a(i, j) * a(j, k)
+
     r = a(i, j) * a(j, k) + (a(i, j) + b(i, j)) * a(j, k)
     # TODO: Leaving off the coefficient in the second argument
     # of the sum leads to an error, investigate and fix.
-    @test_broken expand(r) == 2 * a(i, j) * a(j, k) + b(i, j) * a(j, k)
+    @test expand(r) == 2 * a(i, j) * a(j, k) + b(i, j) * a(j, k)
     @test expand(r) == 2 * a(i, j) * a(j, k) + 1 * b(i, j) * a(j, k)
 
     r = (a(i, j) + b(i, j)) * ((a(j, k) + b(j, k)) * a(k, l))
@@ -200,6 +207,29 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test expand(r) ==
       (a(i, j) * a(j, k)) * (a(k, l) * a(l, m)) +
           (a(i, j) * a(j, k)) * (a(k, l) * b(l, m))
+
+    r = a(i, j) * a(j, k) * a(k, l)
+    r = flatten_expression(r)
+    @test @match r begin
+      SymbolicNamedDimArrayContract() => true
+      _ => false
+    end
+    @test issetequal(arguments(r), [a(i, j), a(j, k), a(k, l)])
+
+    r = a(i, j) * a(j, k)
+    @test time_complexity(r) == 8
+
+    r = a(i, j) + a(i, j)
+    @test time_complexity(r) == 4
+
+    r = 3 * a(i, j)
+    @test time_complexity(r) == 4
+
+    r = a(i, j) + b(i, j)
+    @test time_complexity(r) == 4
+
+    r = a(i, j) * a(j, k) * a(k, l)
+    @test time_complexity(r) == 16
   end
 end
 end

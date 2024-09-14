@@ -10,29 +10,51 @@
 # ## Introduction
 
 using AbstractTrees: print_tree
-using SymbolicArrays: SymbolicArray, expand
+using SymbolicArrays:
+  SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity;
 
-# 2×2 symbolic arrays/matrices `a` and `b`:
+# Construct 2×2 symbolic arrays/matrices `a` and `b`:
 a = SymbolicArray(:a, 2, 2)
 #-
 b = SymbolicArray(:b, 2, 2)
 
-# Index/dimension/mode names:
+# Define index/dimension/mode names:
+
 i, j, k, l, m = :i, :j, :k, :l, :m
 
-# Example of a tensor expression involving contractions
+# Construct symbolic tensor expressions involving contractions
 # and sums of tensors:
+
 r = (a(i, j) * a(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
 print_tree(r)
 
 # Expand the sums in the expression to generate
 # a sum of tensor network contractions:
+
 print_tree(expand(r))
+
+# Flatten nested expressions:
+
+print_tree(flatten_expression(r))
+
+# Optimize the order of evaluation of the expression:
+
+a = SymbolicArray(:a, 2, 3)
+b = SymbolicArray(:b, 3, 2)
+r = a(i, j) * b(j, k) * a(k, l) * b(l, m)
+print_tree(r)
+#-
+time_complexity(r)
+#-
+r_opt = optimize_evaluation_order(r)
+print_tree(r_opt)
+#-
+time_complexity(r_opt)
 
 # In the future we plan to support other expression manipulations, such as `substitute`
 # (similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
-# for substituting a tensor/subexpression with a new tensor/subexpression, contraction sequence
-# optimization, and differentiation.
+# for substituting a subexpression with a new subexpression, more expression order
+# optimization backends, and symbolic differentiation.
 
 # ## Plans
 
@@ -41,18 +63,15 @@ print_tree(expand(r))
 # The following still need to be implemented:
 # 1. complex conjugation of tensors (`conj(a(i, j))`),
 # 2. `dag(a(i, j))` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
-# 3. `substitute(t::TensorExpr.Type, dict::Dict)` for replacing a subexpression with another expression
+# 3. `substitute(t::SymbolicNamedDimArrayExpr, dict::Dict)` for replacing a subexpression with another expression
 # (see [Symbolics.substitute](https://symbolics.juliasymbolics.org/stable/manual/expression_manipulation/#SymbolicUtils.substitute)),
-# 4. change the storage of sum arguments from `Set` to `Vector` (maybe, might make some operations like expression
+# 4. maybe change the storage of sum arguments from `Set` to `Vector` (though that might make some operations like expression
 # comparison slower unless we sort arguments like is done in `Symbolics.jl`, but that may be difficult in general),
-# 5. make `TensorExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype, maybe rename `SymbolicNamedDimArray`,
-# 6. measurements of complexity/computational cost (`cost`, `flops`/`removedsize`
-# ([EinExprs.jl](https://bsc-quantic.github.io/EinExprs.jl/stable/counters)),
-# `time_complexity`/`space_complexity` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl))),
-# 7. expression/contraction path/sequence/order optimization (`optimize_expr`/`optimize_contraction`,
+# 5. make `SymbolicNamedDimArrayExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype,
+# 6. more expression order optimization backends (`optimize_expr`/`optimize_contraction`,
 # `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
 # `optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))),
-# 8. define some special symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, unitary
+# 7. define some special symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, unitary
 # tensors, diagonal tensors, symmetric tensors, etc.,
 #
 # and more.
@@ -70,11 +89,14 @@ print_tree(expand(r))
 
 # ### Code transformations
 
-# Currently the package only supports expanding subexpressions which are sums of tensors into
-# outer sums of tensor contractions using the `SymbolicArrays.expand` function.
+# Currently the package supports some limited code transformations, such as expanding expressions that have subexpressions
+# which are sums of tensors into outer sums of tensor contractions using the `SymbolicArrays.expand` function, as well as
+# an eager expression/contraction order optimization algorithm.
 # The goal is to support a wider range of code transformations, such as:
-# 1. optimizing the contraction sequences/paths of tensor networks (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
-# [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl), [cotengra](https://github.com/jcmgray/cotengra), etc.),
+# 1. more sophisticated backends for expression order optimization (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
+# [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl),
+# [cotengra](https://github.com/jcmgray/cotengra), [TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#Contraction-order-specification-and-optimisation),
+# [MetaTheory.jl](https://juliasymbolics.github.io/Metatheory.jl/dev/egraphs/#Extracting-from-an-EGraph), etc.),
 # 2. computing first and higher order derivatives of tensor networks (see [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
 # 3. common subexpression elimination (see [CommonSubexpressions.jl](https://github.com/rdeits/CommonSubexpressions.jl)),
 # 4. parallelization over independent operations (see [Dagger.jl](https://github.com/JuliaParallel/Dagger.jl)),
