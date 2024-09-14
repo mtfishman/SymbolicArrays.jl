@@ -15,7 +15,7 @@ using SymbolicArrays:
   SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity;
 ````
 
-2×2 symbolic arrays/matrices `a` and `b`:
+Construct 2×2 symbolic arrays/matrices `a` and `b`:
 
 ````julia
 a = SymbolicArray(:a, 2, 2)
@@ -35,7 +35,7 @@ b = SymbolicArray(:b, 2, 2)
 b
 ````
 
-Index/dimension/mode names:
+Define index/dimension/mode names:
 
 ````julia
 i, j, k, l, m = :i, :j, :k, :l, :m
@@ -45,7 +45,7 @@ i, j, k, l, m = :i, :j, :k, :l, :m
 (:i, :j, :k, :l, :m)
 ````
 
-Example of a tensor expression involving contractions
+Construct symbolic tensor expressions involving contractions
 and sums of tensors:
 
 ````julia
@@ -92,7 +92,7 @@ print_tree(expand(r))
 
 ````
 
-Flatten nested expressions.
+Flatten nested expressions:
 
 ````julia
 print_tree(flatten_expression(r))
@@ -109,7 +109,7 @@ print_tree(flatten_expression(r))
 
 ````
 
-Optimize the order of evaluation of the expression.
+Optimize the order of evaluation of the expression:
 
 ````julia
 a = SymbolicArray(:a, 2, 3)
