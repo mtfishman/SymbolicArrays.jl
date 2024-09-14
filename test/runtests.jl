@@ -132,7 +132,7 @@ using Test: @test, @test_broken, @test_throws, @testset
 
     r = a(i, j) + b(i, j) - b(i, j)
     @test issetequal(arguments(r), [1 * a(i, j), 0 * b(i, j)])
-    @test_broken issetequal(arguments(r), [a(i, j), 0 * b(i, j)])
+    @test issetequal(arguments(r), [a(i, j), 0 * b(i, j)])
     @test @match r begin
       SymbolicNamedDimArraySum() => true
       _ => false
@@ -188,10 +188,12 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test isone(coefficient(r, b(i, j)))
     @test isone(coefficient(r, c(i, j)))
 
+    @test 1 * a(i, j) * a(j, k) == a(i, j) * a(j, k)
+
     r = a(i, j) * a(j, k) + (a(i, j) + b(i, j)) * a(j, k)
     # TODO: Leaving off the coefficient in the second argument
     # of the sum leads to an error, investigate and fix.
-    @test_broken expand(r) == 2 * a(i, j) * a(j, k) + b(i, j) * a(j, k)
+    @test expand(r) == 2 * a(i, j) * a(j, k) + b(i, j) * a(j, k)
     @test expand(r) == 2 * a(i, j) * a(j, k) + 1 * b(i, j) * a(j, k)
 
     r = (a(i, j) + b(i, j)) * ((a(j, k) + b(j, k)) * a(k, l))

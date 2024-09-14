@@ -58,6 +58,10 @@ function SymbolicNamedDimArraySum(arguments::Set{SymbolicNamedDimArrayExpr})
   return SymbolicNamedDimArraySum(; arguments, coefficients, namedsize)
 end
 
+function SymbolicNamedDimArraySum(arguments::Vector{SymbolicNamedDimArrayExpr})
+  return SymbolicNamedDimArraySum(Set(arguments))
+end
+
 # TODO: This overwrite a method in Moshi.jl, check if this
 # needs to be defined.
 # SymbolicNamedDimArraySum() = SymbolicNamedDimArraySum(Set{SymbolicNamedDimArrayExpr}())
@@ -271,11 +275,17 @@ function Base.:(==)(t1::SymbolicNamedDimArrayExpr, t2::SymbolicNamedDimArrayExpr
   return @match (t1, t2) begin
     (SymbolicNamedDimArray(), SymbolicNamedDimArray()) => isequal_tensors(t1, t2)
     (SymbolicNamedDimArrayScale(), SymbolicNamedDimArrayScale()) ||
-      (SymbolicNamedDimArrayScale(), SymbolicNamedDimArray()) ||
-      (SymbolicNamedDimArray(), SymbolicNamedDimArrayScale()) => isequal_scales(t1, t2)
+    (SymbolicNamedDimArrayScale(), SymbolicNamedDimArray()) ||
+      (SymbolicNamedDimArray(), SymbolicNamedDimArrayScale()) ||
+      (SymbolicNamedDimArrayScale(), SymbolicNamedDimArrayContract()) ||
+      (SymbolicNamedDimArrayContract(), SymbolicNamedDimArrayScale()) => isequal_scales(t1, t2)
     (SymbolicNamedDimArrayContract(), SymbolicNamedDimArrayContract()) ||
-      (SymbolicNamedDimArraySum(), SymbolicNamedDimArraySum()) => isequal_arguments(t1, t2)
-    (_, _) => isequal_single_argument(t1, t2)
+    (SymbolicNamedDimArraySum(), SymbolicNamedDimArraySum()) => isequal_arguments(t1, t2)
+    (SymbolicNamedDimArraySum(), _) => t1 == SymbolicNamedDimArraySum([t2])
+    (_, SymbolicNamedDimArraySum()) => SymbolicNamedDimArraySum([t1]) == t2
+    (SymbolicNamedDimArrayContract(), _) => t1 == SymbolicNamedDimArrayContract([t2])
+    (_, SymbolicNamedDimArrayContract()) => SymbolicNamedDimArrayContract([t1]) == t2
+    (_, _) => error("Not implemented.")
   end
 end
 
@@ -295,6 +305,7 @@ end
 function Base.hash(t::SymbolicNamedDimArrayExpr, h::UInt)
   return @match t begin
     SymbolicNamedDimArray() => hash_tensor(t, h)
+    SymbolicNamedDimArrayScale(; coefficient=1) => hash(unscale(t), h)
     SymbolicNamedDimArrayScale() => hash_tensor(t, h)
     SymbolicNamedDimArrayContract() => hash_contract_or_sum(t, h)
     SymbolicNamedDimArraySum() => hash_contract_or_sum(t, h)
