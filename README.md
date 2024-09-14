@@ -223,11 +223,12 @@ We may be able to interface `SymbolicArrays.jl` with `Metatheory.jl` through
 
 See also [SimpleExpressions.jl](https://github.com/jverzani/SimpleExpressions.jl),
 [DynamicsExpressions.jl](https://github.com/SymbolicML/DynamicExpressions.jl),
-and [CallableExpressions.jl](https://gitlab.com/nsajko/CallableExpressions.jl).
+and [CallableExpressions.jl](https://gitlab.com/nsajko/CallableExpressions.jl) for other
+expression manipulation tools in Julia.
 
 Of course, this is a very ambitious list of goals, and the timeline for implementing them is unclear.
 Additionally, there is clearly a lot of overlap with the goals of this package and existing work,
-so minimzing duplication would be ideal. An advantage of the current approach is that it is based on
+so minimizing duplication would be ideal. An advantage of the current approach is that it is based on
 a very principled implementation of algebraic data types (ADTs) and pattern matching in Julia
 through the wonderful [Moshi.jl](https://github.com/Roger-luo/Moshi.jl) package. Ideally
 we will leverage more general tools for term rewriting, parallelization, and differentiation
