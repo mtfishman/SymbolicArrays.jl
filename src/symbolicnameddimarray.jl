@@ -409,8 +409,8 @@ end
 function time_complexity(
   ::typeof(+), t1::SymbolicNamedDimArrayExpr, t2::SymbolicNamedDimArrayExpr
 )
-  @assert issetequal(dimnames(t1), dimnames(t2))
-  return 2 * prod(size(t1))
+  @assert issetequal(namedsize(t1), namedsize(t2))
+  return prod(size(t1))
 end
 
 function time_complexity(::typeof(*), c::Number, t::SymbolicNamedDimArrayExpr)

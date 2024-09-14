@@ -224,7 +224,7 @@ using Test: @test, @test_broken, @test_throws, @testset
     @test time_complexity(r) == 4
 
     r = a(i, j) + b(i, j)
-    @test_broken time_complexity(r) == 4
+    @test time_complexity(r) == 4
 
     r = a(i, j) * a(j, k) * a(k, l)
     @test time_complexity(r) == 16
