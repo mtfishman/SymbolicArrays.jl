@@ -11,7 +11,7 @@
 
 using AbstractTrees: print_tree
 using SymbolicArrays:
-  SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity;
+  SymbolicArray, expand, flatten_expr, optimize_evaluation_order, substitute, time_complexity;
 
 # Construct 2×2 symbolic arrays/matrices `a` and `b`:
 a = SymbolicArray(:a, 2, 2)
@@ -20,12 +20,13 @@ b = SymbolicArray(:b, 2, 2)
 
 # Define index/dimension/mode names:
 
-i, j, k, l, m = :i, :j, :k, :l, :m
+i, j, k, l, m = :i, :j, :k, :l, :m;
 
 # Construct symbolic tensor expressions involving contractions
 # and sums of tensors:
 
 r = (a(i, j) * a(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
+#-
 print_tree(r)
 
 # Expand the sums in the expression to generate
@@ -35,7 +36,7 @@ print_tree(expand(r))
 
 # Flatten nested expressions:
 
-print_tree(flatten_expression(r))
+print_tree(flatten_expr(r))
 
 # Optimize the evaluation order of the expression (by default uses an
 # eager optimizer, which isn't always optimal):
@@ -43,19 +44,42 @@ print_tree(flatten_expression(r))
 a = SymbolicArray(:a, 2, 3)
 b = SymbolicArray(:b, 3, 2)
 r = a(i, j) * b(j, k) * a(k, l) * b(l, m)
+#-
 print_tree(r)
 #-
 time_complexity(r)
 #-
 r_opt = optimize_evaluation_order(r)
+#-
 print_tree(r_opt)
 #-
 time_complexity(r_opt)
 
-# In the future we plan to support other expression manipulations, such as `substitute`
-# (similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
-# for substituting a subexpression with a new subexpression, more evaluation order
-# optimization backends, and symbolic differentiation.
+# Substitute subexpressions for other subexpressions
+
+a = SymbolicArray(:a, 2, 2)
+b = SymbolicArray(:b, 2, 2)
+c = SymbolicArray(:c, 2, 2)
+r = (a(i, j) * b(j, k)) * (a(k, l) * b(l, m))
+#-
+print_tree(r)
+#-
+r_sub = substitute(r, [a(i, j) * b(j, k) => c(i, k)])
+#-
+print_tree(r_sub)
+
+# In the future we plan to support more sophisticated
+# substitutions, for example involving wildcards to match
+# multiple expressions:
+
+# ```julia
+# r = (a(i, j) * b(j, k)) * (a(k, l) * b(l, m))
+# substitute(r, [a(:_, :__) * b(:__, :___) => c(:_, :___)]) == c(i, k) * c(k, m)
+# substitute(r, [SymbolicArray(:_, 2, 2)(k, m) => c(k, m)]) == (a(i, j) * b(j, k)) * c(k, m)
+# ```
+
+# In addition, we plan to support more evaluation order
+# optimization backends and symbolic differentiation.
 
 # ## Plans
 
