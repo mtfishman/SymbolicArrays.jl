@@ -12,7 +12,7 @@ using SymbolicArrays:
   coefficient,
   dimnames,
   expand,
-  flatten_expression,
+  flatten_expr,
   leaf_arguments,
   time_complexity,
   unscale
@@ -209,7 +209,7 @@ using Test: @test, @test_broken, @test_throws, @testset
           (a(i, j) * a(j, k)) * (a(k, l) * b(l, m))
 
     r = a(i, j) * a(j, k) * a(k, l)
-    r = flatten_expression(r)
+    r = flatten_expr(r)
     @test @match r begin
       SymbolicNamedDimArrayContract() => true
       _ => false
@@ -230,6 +230,12 @@ using Test: @test, @test_broken, @test_throws, @testset
 
     r = a(i, j) * a(j, k) * a(k, l)
     @test time_complexity(r) == 16
+
+    r = (a(i, j) * b(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
+    subs = [a(l, m) + b(l, m) => c(l, m)]
+    r_sub = (a(i, j) * b(j, k)) * (a(k, l) * c(l, m))
+    @test substitute(r, subs) == r_sub
+    @test substitute(r, Dict(subs)) == r_sub
   end
 end
 end

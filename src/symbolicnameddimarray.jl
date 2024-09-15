@@ -124,7 +124,7 @@ function map_arguments(f, t::SymbolicNamedDimArrayExpr)
     SymbolicNamedDimArray() => ()
     SymbolicNamedDimArrayScale() => f(coefficient(t)) * f(unscale(t))
     SymbolicNamedDimArrayContract() =>
-      SymbolicNamedDimArrayContract(generic_map(f, t))
+      SymbolicNamedDimArrayContract(generic_map(f, arguments(t)))
     SymbolicNamedDimArraySum() => SymbolicNamedDimArraySum(generic_map(f, arguments(t)))
   end
 end
@@ -138,6 +138,13 @@ function leaf_arguments(t::SymbolicNamedDimArrayExpr)
     SymbolicNamedDimArrayContract(; leaf_arguments) => leaf_arguments
     SymbolicNamedDimArraySum(; arguments) => arguments
     SymbolicNamedDimArrayScale(; term) => arguments(term)
+  end
+end
+
+function leaf_contract_arguments(t::SymbolicNamedDimArrayExpr)
+  @match t begin
+    SymbolicNamedDimArrayContract() => leaf_arguments(t)
+    _ => t
   end
 end
 
@@ -200,7 +207,11 @@ function unscale(t::SymbolicNamedDimArrayExpr)
 end
 
 function SymbolicNamedDimArrayContract(arguments::Vector{SymbolicNamedDimArrayExpr})
-  leaf_arguments = arguments
+  leaf_arguments = if length(arguments) < 2
+    arguments
+  else
+    mapreduce(leaf_contract_arguments, vcat, arguments)
+  end
   new_namedsize = mapreduce(namedsize, symdiff, arguments)
   return SymbolicNamedDimArrayContract(; arguments, leaf_arguments, namedsize=new_namedsize)
 end
@@ -364,7 +375,7 @@ function expand_scale(t)
 end
 
 function expand(t::SymbolicNamedDimArrayExpr)
-  @match t begin
+  return @match t begin
     SymbolicNamedDimArrayContract() => expand_contract(t)
     SymbolicNamedDimArraySum() => expand_sum(t)
     SymbolicNamedDimArrayScale() => expand_scale(t)
@@ -372,11 +383,27 @@ function expand(t::SymbolicNamedDimArrayExpr)
   end
 end
 
+# Covers things like `Number`.
+isexpr(x) = false
+
+function isexpr(t::SymbolicNamedDimArrayExpr)
+  return @match t begin
+    SymbolicNamedDimArray() => false
+    _ => true
+  end
+end
+
 """
 Substitute the specified subexpression for a new one.
 """
-function substitute(t::SymbolicNamedDimArrayExpr, subs)
-  return error("Not implemented.")
+function substitute(t::SymbolicNamedDimArrayExpr, substitutions::AbstractDict)
+  haskey(substitutions, t) && return substitutions[t]
+  !isexpr(t) && return t
+  return map_arguments(a -> substitute(a, substitutions), t)
+end
+
+function substitute(t::SymbolicNamedDimArrayExpr, substitutions::AbstractVector)
+  return substitute(t, Dict(substitutions))
 end
 
 abstract type AbstractContext end
@@ -459,13 +486,13 @@ end
 Flatten a nested expression down to a flat expression,
 removing information about the order of operations.
 """
-function flatten_expression(t::SymbolicNamedDimArrayExpr)
+function flatten_expr(t::SymbolicNamedDimArrayExpr)
   @match t begin
     SymbolicNamedDimArray() => t
-    SymbolicNamedDimArrayScale() => coefficient(t) * flatten_expression(unscale(t))
+    SymbolicNamedDimArrayScale() => coefficient(t) * flatten_expr(unscale(t))
     SymbolicNamedDimArrayContract() =>
-      SymbolicNamedDimArrayContract(flatten_expression.(leaf_arguments(t)))
-    SymbolicNamedDimArraySum() => map_arguments(flatten_expression, t)
+      SymbolicNamedDimArrayContract(flatten_expr.(leaf_arguments(t)))
+    SymbolicNamedDimArraySum() => map_arguments(flatten_expr, t)
   end
 end
 
@@ -485,7 +512,7 @@ function optimize_flattened_evaluation_order(alg, t::SymbolicNamedDimArrayExpr)
 end
 
 function optimize_evaluation_order(alg, t::SymbolicNamedDimArrayExpr)
-  return optimize_flattened_evaluation_order(alg, flatten_expression(t))
+  return optimize_flattened_evaluation_order(alg, flatten_expr(t))
 end
 
 function optimize_evaluation_order(

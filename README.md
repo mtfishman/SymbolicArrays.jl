@@ -12,17 +12,7 @@
 ````julia
 using AbstractTrees: print_tree
 using SymbolicArrays:
-  SymbolicArray, expand, flatten_expression, optimize_evaluation_order, time_complexity;
-````
-
-````
-Precompiling SymbolicArrays
-  ✓ SymbolicArrays
-  1 dependency successfully precompiled in 2 seconds. 6 already precompiled.
-Precompiling SymbolicArraysAbstractTreesExt
-  ✓ SymbolicArrays → SymbolicArraysAbstractTreesExt
-  1 dependency successfully precompiled in 1 seconds. 8 already precompiled.
-
+  SymbolicArray, expand, flatten_expr, optimize_evaluation_order, substitute, time_complexity;
 ````
 
 Construct 2×2 symbolic arrays/matrices `a` and `b`:
@@ -48,11 +38,7 @@ b
 Define index/dimension/mode names:
 
 ````julia
-i, j, k, l, m = :i, :j, :k, :l, :m
-````
-
-````
-(:i, :j, :k, :l, :m)
+i, j, k, l, m = :i, :j, :k, :l, :m;
 ````
 
 Construct symbolic tensor expressions involving contractions
@@ -60,6 +46,13 @@ and sums of tensors:
 
 ````julia
 r = (a(i, j) * a(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
+````
+
+````
+((a(:i, :j) * a(:j, :k)) * (a(:k, :l) * (a(:l, :m) + b(:l, :m))))
+````
+
+````julia
 print_tree(r)
 ````
 
@@ -105,7 +98,7 @@ print_tree(expand(r))
 Flatten nested expressions:
 
 ````julia
-print_tree(flatten_expression(r))
+print_tree(flatten_expr(r))
 ````
 
 ````
@@ -126,6 +119,13 @@ eager optimizer, which isn't always optimal):
 a = SymbolicArray(:a, 2, 3)
 b = SymbolicArray(:b, 3, 2)
 r = a(i, j) * b(j, k) * a(k, l) * b(l, m)
+````
+
+````
+(((a(:i, :j) * b(:j, :k)) * a(:k, :l)) * b(:l, :m))
+````
+
+````julia
 print_tree(r)
 ````
 
@@ -150,6 +150,13 @@ time_complexity(r)
 
 ````julia
 r_opt = optimize_evaluation_order(r)
+````
+
+````
+((a(:i, :j) * b(:j, :k)) * (a(:k, :l) * b(:l, :m)))
+````
+
+````julia
 print_tree(r_opt)
 ````
 
@@ -172,10 +179,67 @@ time_complexity(r_opt)
 32
 ````
 
-In the future we plan to support other expression manipulations, such as `substitute`
-(similar to [Symbolics.substitute](https://docs.sciml.ai/Symbolics/stable/manual/expression_manipulation/#SymbolicUtils.substitute))
-for substituting a subexpression with a new subexpression, more evaluation order
-optimization backends, and symbolic differentiation.
+Substitute subexpressions for other subexpressions:
+
+````julia
+a = SymbolicArray(:a, 2, 2)
+b = SymbolicArray(:b, 2, 2)
+c = SymbolicArray(:c, 2, 2)
+r = (a(i, j) * b(j, k)) * (a(k, l) * b(l, m))
+````
+
+````
+((a(:i, :j) * b(:j, :k)) * (a(:k, :l) * b(:l, :m)))
+````
+
+````julia
+print_tree(r)
+````
+
+````
+*
+├─ *
+│  ├─ a(:i, :j)
+│  └─ b(:j, :k)
+└─ *
+   ├─ a(:k, :l)
+   └─ b(:l, :m)
+
+````
+
+````julia
+r_sub = substitute(r, [a(i, j) * b(j, k) => c(i, k)])
+````
+
+````
+(c(:i, :k) * (a(:k, :l) * b(:l, :m)))
+````
+
+````julia
+print_tree(r_sub)
+````
+
+````
+*
+├─ c(:i, :k)
+└─ *
+   ├─ a(:k, :l)
+   └─ b(:l, :m)
+
+````
+
+In the future we plan to support more sophisticated
+substitutions, for example involving wildcards to match
+multiple expressions:
+
+```julia
+r = (a(i, j) * b(j, k)) * (a(k, l) * b(l, m))
+substitute(r, [a(:_, :__) * b(:__, :___) => c(:_, :___)]) == c(i, k) * c(k, m)
+substitute(r, [SymbolicArray(:_, 2, 2)(k, m) => c(k, m)]) == (a(i, j) * b(j, k)) * c(k, m)
+```
+
+In addition, we plan to support more evaluation order
+optimization backends and symbolic differentiation.
 
 ## Plans
 
@@ -184,15 +248,13 @@ optimization backends, and symbolic differentiation.
 The following still need to be implemented:
 1. complex conjugation of tensors (`conj(a(i, j))`),
 2. `dag(a(i, j))` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
-3. `substitute(t::SymbolicNamedDimArrayExpr, dict::Dict)` for replacing a subexpression with another expression
-(see [Symbolics.substitute](https://symbolics.juliasymbolics.org/stable/manual/expression_manipulation/#SymbolicUtils.substitute)),
-4. maybe change the storage of sum arguments from `Set` to `Vector` (though that might make some operations like expression
+3. maybe change the storage of sum arguments from `Set` to `Vector` (though that might make some operations like expression
 comparison slower unless we sort arguments like is done in `Symbolics.jl`, but that may be difficult in general),
-5. make `SymbolicNamedDimArrayExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype,
-6. more expression order optimization backends (`optimize_expr`/`optimize_contraction`,
+4. make `SymbolicNamedDimArrayExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype,
+5. more expression order optimization backends (`optimize_expr`/`optimize_contraction`,
 `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
 `optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))),
-7. define some special symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, unitary
+6. define some special symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, unitary
 tensors, diagonal tensors, symmetric tensors, etc.,
 
 and more.
@@ -214,7 +276,7 @@ Currently the package supports some limited code transformations, such as expand
 which are sums of tensors into outer sums of tensor contractions using the `SymbolicArrays.expand` function, as well as
 an eager expression/contraction order optimization algorithm.
 The goal is to support a wider range of code transformations, such as:
-1. more sophisticated backends for expression order optimization (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
+1. more sophisticated backends for evaluation order optimization (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
 [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl),
 [cotengra](https://github.com/jcmgray/cotengra), [TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#Contraction-order-specification-and-optimisation),
 [MetaTheory.jl](https://juliasymbolics.github.io/Metatheory.jl/dev/egraphs/#Extracting-from-an-EGraph), etc.),
