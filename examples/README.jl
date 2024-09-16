@@ -80,8 +80,8 @@ print_tree(r_sub)
 
 # ```julia
 # r = (a[i, j] * b[j, k]) * (a[k, l] * b[l, m])
-# x, y, z = Name.((:_, :__, :___))
-# substitute(r, [a[x, y] * b[y, z] => c[x, z]]) == c[i, k] * c[k, m]
+# _x, _y, _z = Name.((:_x, :_y, :_z))
+# substitute(r, [a[_x, _y] * b[_y, _z] => c[x, z]]) == c[i, k] * c[k, m]
 # substitute(r, [SymbolicArray(:_, 2, 2)[k, m] => c[k, m]]) == (a[i, j] * b[j, k]) * c[k, m]
 # ```
 
