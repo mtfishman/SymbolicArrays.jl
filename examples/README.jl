@@ -11,7 +11,13 @@
 
 using AbstractTrees: print_tree
 using SymbolicArrays:
-  SymbolicArray, expand, flatten_expr, optimize_evaluation_order, substitute, time_complexity;
+  Name,
+  SymbolicArray,
+  expand,
+  flatten_expr,
+  optimize_evaluation_order,
+  substitute,
+  time_complexity;
 
 # Construct 2×2 symbolic arrays/matrices `a` and `b`:
 a = SymbolicArray(:a, 2, 2)
@@ -20,12 +26,12 @@ b = SymbolicArray(:b, 2, 2)
 
 # Define index/dimension/mode names:
 
-i, j, k, l, m = :i, :j, :k, :l, :m;
+i, j, k, l, m = Name.((:i, :j, :k, :l, :m));
 
 # Construct symbolic tensor expressions involving contractions
 # and sums of tensors:
 
-r = (a(i, j) * a(j, k)) * (a(k, l) * (a(l, m) + b(l, m)))
+r = (a[i, j] * a[j, k]) * (a[k, l] * (a[l, m] + b[l, m]))
 #-
 print_tree(r)
 
@@ -43,7 +49,7 @@ print_tree(flatten_expr(r))
 
 a = SymbolicArray(:a, 2, 3)
 b = SymbolicArray(:b, 3, 2)
-r = a(i, j) * b(j, k) * a(k, l) * b(l, m)
+r = a[i, j] * b[j, k] * a[k, l] * b[l, m]
 #-
 print_tree(r)
 #-
@@ -60,11 +66,11 @@ time_complexity(r_opt)
 a = SymbolicArray(:a, 2, 2)
 b = SymbolicArray(:b, 2, 2)
 c = SymbolicArray(:c, 2, 2)
-r = (a(i, j) * b(j, k)) * (a(k, l) * b(l, m))
+r = (a[i, j] * b[j, k]) * (a[k, l] * b[l, m])
 #-
 print_tree(r)
 #-
-r_sub = substitute(r, [a(i, j) * b(j, k) => c(i, k)])
+r_sub = substitute(r, [a[i, j] * b[j, k] => c[i, k]])
 #-
 print_tree(r_sub)
 
@@ -73,9 +79,10 @@ print_tree(r_sub)
 # multiple expressions:
 
 # ```julia
-# r = (a(i, j) * b(j, k)) * (a(k, l) * b(l, m))
-# substitute(r, [a(:_, :__) * b(:__, :___) => c(:_, :___)]) == c(i, k) * c(k, m)
-# substitute(r, [SymbolicArray(:_, 2, 2)(k, m) => c(k, m)]) == (a(i, j) * b(j, k)) * c(k, m)
+# r = (a[i, j] * b[j, k]) * (a[k, l] * b[l, m])
+# x, y, z = Name.((:_, :__, :___))
+# substitute(r, [a[x, y] * b[y, z] => c[x, z]]) == c[i, k] * c[k, m]
+# substitute(r, [SymbolicArray(:_, 2, 2)[k, m] => c[k, m]]) == (a[i, j] * b[j, k]) * c[k, m]
 # ```
 
 # In addition, we plan to support more evaluation order
@@ -86,15 +93,13 @@ print_tree(r_sub)
 # ### Basic operations and modifications to implement
 
 # The following still need to be implemented:
-# 1. complex conjugation of tensors (`conj(a(i, j))`),
-# 2. `dag(a(i, j))` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
+# 1. complex conjugation of tensors (`conj(a[i, j])`),
+# 2. `dag(a[i, j])` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
 # 3. maybe change the storage of sum arguments from `Set` to `Vector` (though that might make some operations like expression
 # comparison slower unless we sort arguments like is done in `Symbolics.jl`, but that may be difficult in general),
 # 4. make `SymbolicNamedDimArrayExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype,
-# 5. more expression order optimization backends (`optimize_expr`/`optimize_contraction`,
-# `optimize_code` ([OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl)),
-# `optimal_contraction_tree`/`optimal_contraction_order` ([TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#TensorOperations.@tensoropt))),
-# 6. define some special symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, unitary
+# 5. more evaluation order optimization backends,
+# 6. define more symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, isometric/unitary
 # tensors, diagonal tensors, symmetric tensors, etc.,
 #
 # and more.
@@ -114,7 +119,7 @@ print_tree(r_sub)
 
 # Currently the package supports some limited code transformations, such as expanding expressions that have subexpressions
 # which are sums of tensors into outer sums of tensor contractions using the `SymbolicArrays.expand` function, as well as
-# an eager expression/contraction order optimization algorithm.
+# an eager evaluation order optimization algorithm.
 # The goal is to support a wider range of code transformations, such as:
 # 1. more sophisticated backends for evaluation order optimization (see [EinExprs.jl](https://github.com/bsc-quantic/EinExprs.jl),
 # [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl),
@@ -165,5 +170,5 @@ print_tree(r_sub)
 # running these commands from the package root of SymbolicArrays.jl:
 
 # ```julia
-# import Pkg, Literate; Pkg.activate("examples"); Literate.markdown("examples/README.jl", "."; flavor=Literate.CommonMarkFlavor(), execute=true)
+# import JuliaFormatter, Literate, Pkg; JuliaFormatter.format("."); Pkg.activate("examples"); Literate.markdown("examples/README.jl", "."; flavor=Literate.CommonMarkFlavor(), execute=true)
 # ```

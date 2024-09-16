@@ -1,10 +1,25 @@
 module NamedIntegers
 using AutoHashEquals: @auto_hash_equals
+
+struct Name{Value}
+  value::Value
+end
+unname(n::Name) = getfield(n, :value)
+Base.:(==)(n1::Name, n2::Name) = unname(n1) == unname(n2)
+Base.:(==)(n1::Name, n2) = unname(n1) == n2
+Base.:(==)(n1, n2::Name) = n1 == unname(n2)
+
+# Fix ambiguity issues.
+Base.:(==)(n1::Name, n2::Missing) = unname(n1) == n2
+Base.:(==)(n1::Missing, n2::Name) = n1 == unname(n2)
+Base.:(==)(n1::Name, n2::WeakRef) = unname(n1) == n2
+Base.:(==)(n1::WeakRef, n2::Name) = n1 == unname(n2)
+
 @auto_hash_equals struct NamedInteger{Value<:Integer,Name} <: Integer
   value::Value
   name::Name
 end
-unname(ni::NamedInteger) = ni.value
+unname(ni::NamedInteger) = getfield(ni, :value)
 unname(::Type{<:NamedInteger{Value}}) where {Value} = Value
 name(ni::NamedInteger) = getfield(ni, :name)
 named(value::Integer, name) = NamedInteger(value, name)
