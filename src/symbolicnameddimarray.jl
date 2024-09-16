@@ -3,7 +3,7 @@ using Combinatorics: combinations
 using IterTools: flagfirst
 using Moshi.Data: @data, variant_fieldnames, variant_type
 using Moshi.Match: @match
-using ..NamedIntegers: NamedIntegers, NamedInteger, name, named, unname
+using ..NamedIntegers: NamedIntegers, Name, NamedInteger, name, named, unname
 
 # TODO: Parametrize by NamedDimArray name, namedsize, coefficient
 # types, etc.
@@ -33,6 +33,16 @@ const SymbolicNamedDimArray = SymbolicNamedDimArrayVariants.NamedDimArray
 const SymbolicNamedDimArrayContract = SymbolicNamedDimArrayVariants.Contract
 const SymbolicNamedDimArraySum = SymbolicNamedDimArrayVariants.Sum
 const SymbolicNamedDimArrayScale = SymbolicNamedDimArrayVariants.Scale
+
+# TODO: Move to `SymbolicArraysSymbolicTensorsExt`.
+function Base.getindex(a::SymbolicArray, dimnames::Name...)
+  @assert ndims(a) == length(dimnames)
+  return SymbolicNamedDimArray(name(a), named.(size(a), unname.(dimnames))...)
+end
+
+function SymbolicNamedDimArray(name, namedsize::NamedInteger...)
+  return SymbolicNamedDimArray(name, [namedsize...])
+end
 
 function NamedIntegers.name(t::SymbolicNamedDimArrayExpr)
   @match t begin
@@ -286,12 +296,13 @@ function Base.:(==)(t1::SymbolicNamedDimArrayExpr, t2::SymbolicNamedDimArrayExpr
   return @match (t1, t2) begin
     (SymbolicNamedDimArray(), SymbolicNamedDimArray()) => isequal_tensors(t1, t2)
     (SymbolicNamedDimArrayScale(), SymbolicNamedDimArrayScale()) ||
-    (SymbolicNamedDimArrayScale(), SymbolicNamedDimArray()) ||
+      (SymbolicNamedDimArrayScale(), SymbolicNamedDimArray()) ||
       (SymbolicNamedDimArray(), SymbolicNamedDimArrayScale()) ||
       (SymbolicNamedDimArrayScale(), SymbolicNamedDimArrayContract()) ||
-      (SymbolicNamedDimArrayContract(), SymbolicNamedDimArrayScale()) => isequal_scales(t1, t2)
+      (SymbolicNamedDimArrayContract(), SymbolicNamedDimArrayScale()) =>
+      isequal_scales(t1, t2)
     (SymbolicNamedDimArrayContract(), SymbolicNamedDimArrayContract()) ||
-    (SymbolicNamedDimArraySum(), SymbolicNamedDimArraySum()) => isequal_arguments(t1, t2)
+      (SymbolicNamedDimArraySum(), SymbolicNamedDimArraySum()) => isequal_arguments(t1, t2)
     (SymbolicNamedDimArraySum(), _) => t1 == SymbolicNamedDimArraySum([t2])
     (_, SymbolicNamedDimArraySum()) => SymbolicNamedDimArraySum([t1]) == t2
     (SymbolicNamedDimArrayContract(), _) => t1 == SymbolicNamedDimArrayContract([t2])
@@ -554,14 +565,9 @@ function print_op_arguments(io::IO, f::Function, t)
   return nothing
 end
 
-function square_to_round_brackets(s::AbstractString)
-  return replace(s, "[" => "(", "]" => ")")
-end
-
 function Base.show(io::IO, t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() =>
-      print(io, name(t), square_to_round_brackets(string(dimnames(t))))
+    SymbolicNamedDimArray() => print(io, name(t), string(dimnames(t)))
     SymbolicNamedDimArrayContract() => print_op_arguments(io, *, t)
     SymbolicNamedDimArraySum() => print_op_arguments(io, +, t)
     SymbolicNamedDimArrayScale() => print(io, coefficient(t), " * ", unscale(t))

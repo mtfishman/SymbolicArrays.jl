@@ -22,9 +22,3 @@ end
 function Base.show(io::IO, mime::MIME"text/plain", a::SymbolicArray)
   return show(io, a)
 end
-
-# TODO: Move to `SymbolicArraysSymbolicTensorsExt`.
-function (a::SymbolicArray)(dimnames...)
-  @assert ndims(a) == length(dimnames)
-  return SymbolicNamedDimArray(name(a), named.(size(a), collect(dimnames)))
-end
