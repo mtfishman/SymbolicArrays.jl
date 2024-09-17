@@ -235,14 +235,17 @@ print_tree(r_sub)
 ````
 
 In the future we plan to support more sophisticated
-substitutions, for example involving wildcards to match
+substitutions, for example substituting arrays independent
+of the dimension names and substituting based on wildcards to match
 multiple expressions:
 
 ```julia
 r = (a[i, j] * b[j, k]) * (a[k, l] * b[l, m])
-_x, _y, _z = Name.((:_x, :_y, :_z))
-substitute(r, [a[_x, _y] * b[_y, _z] => c[x, z]]) == c[i, k] * c[k, m]
-substitute(r, [SymbolicArray(:_, 2, 2)[k, m] => c[k, m]]) == (a[i, j] * b[j, k]) * c[k, m]
+substitute(r, [a => c]) == (c[i, j] * b[j, k]) * (c[k, l] * b[l, m])
+_x, _y, _z = Name.((:_x, :_y, :_z)) # Names with underscore prefixes treated as wildcards
+substitute(r, [a[_x, _y] * b[_y, _z] => c[_x, _z]]) == c[i, k] * c[k, m]
+_a = SymbolicArray(:_, 2, 2)
+substitute(r, [_a[k, m] => c[k, m]]) == (a[i, j] * b[j, k]) * c[k, m]
 ```
 
 In addition, we plan to support more evaluation order
