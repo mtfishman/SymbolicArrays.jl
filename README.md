@@ -262,32 +262,6 @@ print_tree(simplify(r))
 
 ````
 
-````julia
-print_tree(flatten_expr(r))
-````
-
-````
-*
-├─ a[:i, :j]
-├─ Id[:j, :k]
-├─ b[:k, :l]
-├─ Id[:l, :m]
-└─ c[:m, :n]
-
-````
-
-````julia
-print_tree(simplify(flatten_expr(r)))
-````
-
-````
-*
-├─ a[:i, :k]
-├─ b[:k, :m]
-└─ c[:m, :n]
-
-````
-
 In the future we plan to support more sophisticated
 substitutions, for example substituting arrays independent
 of the dimension names and substituting based on wildcards to match

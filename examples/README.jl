@@ -82,10 +82,6 @@ r = flatten_expr(a[i, j] * id[j, k] * b[k, l]) * id[l, m] * c[m, n]
 print_tree(r)
 #-
 print_tree(simplify(r))
-#-
-print_tree(flatten_expr(r))
-#-
-print_tree(simplify(flatten_expr(r)))
 
 # In the future we plan to support more sophisticated
 # substitutions, for example substituting arrays independent
