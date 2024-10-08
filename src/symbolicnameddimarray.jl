@@ -119,7 +119,8 @@ end
 function namedsize(t::SymbolicNamedDimArrayExpr)
   @match t begin
     SymbolicNamedDimArray(; namedsize) => namedsize
-    SymbolicNamedDimIdentity(; codomain_namedlength, domain_namedlength) => [codomain_namedlength, domain_namedlength]
+    SymbolicNamedDimIdentity(; codomain_namedlength, domain_namedlength) =>
+      [codomain_namedlength, domain_namedlength]
     SymbolicNamedDimArrayContract(; namedsize) => namedsize
     SymbolicNamedDimArraySum() => namedsize_sum_arguments(arguments(t))
     SymbolicNamedDimArrayScale(; term) => namedsize(term)
@@ -328,7 +329,8 @@ function Base.:(==)(t1::SymbolicNamedDimArrayExpr, t2::SymbolicNamedDimArrayExpr
   return @match (t1, t2) begin
     (SymbolicNamedDimArray(), SymbolicNamedDimArray()) => isequal_tensors(t1, t2)
     (SymbolicNamedDimIdentity(), SymbolicNamedDimIdentity()) => isequal_tensors(t1, t2)
-    (SymbolicNamedDimIdentity(), SymbolicNamedDimArray()) || (SymbolicNamedDimArray(), SymbolicNamedDimIdentity())=> false
+    (SymbolicNamedDimIdentity(), SymbolicNamedDimArray()) ||
+      (SymbolicNamedDimArray(), SymbolicNamedDimIdentity()) => false
     (SymbolicNamedDimArrayScale(), SymbolicNamedDimArrayScale()) ||
       (SymbolicNamedDimArrayScale(), SymbolicNamedDimArray()) ||
       (SymbolicNamedDimArray(), SymbolicNamedDimArrayScale()) ||
@@ -612,8 +614,10 @@ function replace_dimname(t::SymbolicNamedDimArrayExpr, replacement::Pair)
   return @match t begin
     SymbolicNamedDimArray() => replace_dimname_array(t, replacement)
     SymbolicNamedDimIdentity() => replace_dimname_identity(t, replacement)
-    SymbolicNamedDimArrayScale() => coefficient(t) * replace_dimname(unscale(t), replacement)
-    SymbolicNamedDimArrayContract() => map_arguments(a -> replace_dimname(a, replacement), t)
+    SymbolicNamedDimArrayScale() =>
+      coefficient(t) * replace_dimname(unscale(t), replacement)
+    SymbolicNamedDimArrayContract() =>
+      map_arguments(a -> replace_dimname(a, replacement), t)
     SymbolicNamedDimArraySum() => map_arguments(a -> replace_dimname(a, replacement), t)
   end
 end
@@ -679,7 +683,8 @@ end
 
 function Base.show(io::IO, t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => print(io, name(t), string(dimnames(t)))
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() =>
+      print(io, name(t), string(dimnames(t)))
     SymbolicNamedDimArrayContract() => print_op_arguments(io, *, t)
     SymbolicNamedDimArraySum() => print_op_arguments(io, +, t)
     SymbolicNamedDimArrayScale() => print(io, coefficient(t), " * ", unscale(t))
