@@ -5,22 +5,35 @@ using Moshi.Data: @data, variant_fieldnames, variant_type
 using Moshi.Match: @match
 using ..NamedIntegers: NamedIntegers, Name, NamedInteger, name, named, unname
 
+# TODO: Make this a subtype of `NamedDimArrays.AbstractNamedDimArray`
 # TODO: Parametrize by NamedDimArray name, namedsize, coefficient
 # types, etc.
 @data SymbolicNamedDimArrayVariants <: AbstractArray{Any,Any} begin
-  struct NamedDimArray
+  struct Array
     name::Any
-    namedsize::Vector{NamedInteger}
+    namedsize::Vector
+  end
+  struct Identity
+    codomain_namedlength::Any
+    domain_namedlength::Any
+  end
+  struct Isometry
+    name::Any
+    codomain_namedsize::Vector
+    domain_namedsize::Vector
+  end
+  struct Conj
+    argument::SymbolicNamedDimArrayVariants
   end
   struct Contract
     arguments::Vector{SymbolicNamedDimArrayVariants}
     leaf_arguments::Vector{SymbolicNamedDimArrayVariants}
-    namedsize::Vector{NamedInteger}
+    namedsize::Vector
   end
   struct Sum
     arguments::Set{SymbolicNamedDimArrayVariants}
     coefficients::Dict{SymbolicNamedDimArrayVariants,Number}
-    namedsize::Vector{NamedInteger}
+    namedsize::Vector
   end
   struct Scale
     coefficient::Number
@@ -29,24 +42,41 @@ using ..NamedIntegers: NamedIntegers, Name, NamedInteger, name, named, unname
 end
 
 const SymbolicNamedDimArrayExpr = SymbolicNamedDimArrayVariants.Type
-const SymbolicNamedDimArray = SymbolicNamedDimArrayVariants.NamedDimArray
+const SymbolicNamedDimArray = SymbolicNamedDimArrayVariants.Array
+const SymbolicNamedDimIdentity = SymbolicNamedDimArrayVariants.Identity
+const SymbolicNamedDimIsometry = SymbolicNamedDimArrayVariants.Isometry
+const SymbolicNamedDimArrayConj = SymbolicNamedDimArrayVariants.Conj
 const SymbolicNamedDimArrayContract = SymbolicNamedDimArrayVariants.Contract
 const SymbolicNamedDimArraySum = SymbolicNamedDimArrayVariants.Sum
 const SymbolicNamedDimArrayScale = SymbolicNamedDimArrayVariants.Scale
 
 # TODO: Move to `SymbolicArraysSymbolicTensorsExt`.
-function Base.getindex(a::SymbolicArray, dimnames::Name...)
+function Base.getindex(a::AbstractSymbolicArray, dimnames::Name...)
   @assert ndims(a) == length(dimnames)
   return SymbolicNamedDimArray(name(a), named.(size(a), unname.(dimnames))...)
 end
+function Base.getindex(a::SymbolicIdentity, dimnames::Name...)
+  @assert ndims(a) == length(dimnames)
+  return SymbolicNamedDimIdentity(named.(size(a), unname.(dimnames))...)
+end
 
+# TODO: Use `AbstractNamedInteger`.
 function SymbolicNamedDimArray(name, namedsize::NamedInteger...)
   return SymbolicNamedDimArray(name, [namedsize...])
 end
 
 function NamedIntegers.name(t::SymbolicNamedDimArrayExpr)
-  @match t begin
+  return @match t begin
     SymbolicNamedDimArray(; name) => name
+    SymbolicNamedDimIdentity() => name(unname(t))
+    _ => error("No name.")
+  end
+end
+
+function NamedIntegers.unname(t::SymbolicNamedDimArrayExpr)
+  return @match t begin
+    SymbolicNamedDimArray() => SymbolicArray(name(t), size(t)...)
+    SymbolicNamedDimIdentity() => SymbolicIdentity(size(t)[1]) # TODO: Use `codomain_length`?
     _ => error("No name.")
   end
 end
@@ -55,7 +85,8 @@ end
 # a sum, either the first argument or empty
 # if there are no arguments.
 function namedsize_sum_arguments(arguments)
-  isempty(arguments) && return NamedInteger[]
+  # TODO: Use `AbstractNamedInteger[]`?
+  isempty(arguments) && return []
   return namedsize(first(arguments))
 end
 
@@ -88,6 +119,7 @@ end
 function namedsize(t::SymbolicNamedDimArrayExpr)
   @match t begin
     SymbolicNamedDimArray(; namedsize) => namedsize
+    SymbolicNamedDimIdentity(; codomain_namedlength, domain_namedlength) => [codomain_namedlength, domain_namedlength]
     SymbolicNamedDimArrayContract(; namedsize) => namedsize
     SymbolicNamedDimArraySum() => namedsize_sum_arguments(arguments(t))
     SymbolicNamedDimArrayScale(; term) => namedsize(term)
@@ -109,7 +141,7 @@ and `arguments`.
 """
 function operator(t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() => nothing
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => nothing
     SymbolicNamedDimArrayScale() => *
     SymbolicNamedDimArrayContract() => *
     SymbolicNamedDimArraySum() => +
@@ -122,7 +154,7 @@ See also `SymbolicUtils.arguments` and `TermInterface.arguments`.
 """
 function arguments(t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() => ()
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => ()
     SymbolicNamedDimArrayScale() => (coefficient(t), unscale(t))
     SymbolicNamedDimArrayContract(; arguments) => arguments
     SymbolicNamedDimArraySum(; arguments) => arguments
@@ -131,7 +163,7 @@ end
 
 function map_arguments(f, t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() => ()
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => ()
     SymbolicNamedDimArrayScale() => f(coefficient(t)) * f(unscale(t))
     SymbolicNamedDimArrayContract() =>
       SymbolicNamedDimArrayContract(generic_map(f, arguments(t)))
@@ -144,7 +176,7 @@ The leaf (NamedDimArray) arguments of a nested NamedDimArray contraction or sum.
 """
 function leaf_arguments(t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() => [t]
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => [t]
     SymbolicNamedDimArrayContract(; leaf_arguments) => leaf_arguments
     SymbolicNamedDimArraySum(; arguments) => arguments
     SymbolicNamedDimArrayScale(; term) => arguments(term)
@@ -229,7 +261,7 @@ end
 # Contract two tensors/tensor networks together.
 function contract_tensors(t1, t2)
   arguments = [t1, t2]
-  leaf_arguments = [arguments_contract(t1); arguments_contract(t2)]
+  leaf_arguments = [leaf_contract_arguments(t1); leaf_contract_arguments(t2)]
   new_namedsize = symdiff(namedsize(t1), namedsize(t2))
   return SymbolicNamedDimArrayContract(; arguments, leaf_arguments, namedsize=new_namedsize)
 end
@@ -295,6 +327,8 @@ end
 function Base.:(==)(t1::SymbolicNamedDimArrayExpr, t2::SymbolicNamedDimArrayExpr)
   return @match (t1, t2) begin
     (SymbolicNamedDimArray(), SymbolicNamedDimArray()) => isequal_tensors(t1, t2)
+    (SymbolicNamedDimIdentity(), SymbolicNamedDimIdentity()) => isequal_tensors(t1, t2)
+    (SymbolicNamedDimIdentity(), SymbolicNamedDimArray()) || (SymbolicNamedDimArray(), SymbolicNamedDimIdentity())=> false
     (SymbolicNamedDimArrayScale(), SymbolicNamedDimArrayScale()) ||
       (SymbolicNamedDimArrayScale(), SymbolicNamedDimArray()) ||
       (SymbolicNamedDimArray(), SymbolicNamedDimArrayScale()) ||
@@ -326,7 +360,7 @@ end
 
 function Base.hash(t::SymbolicNamedDimArrayExpr, h::UInt)
   return @match t begin
-    SymbolicNamedDimArray() => hash_tensor(t, h)
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => hash_tensor(t, h)
     SymbolicNamedDimArrayScale(; coefficient=1) => hash(unscale(t), h)
     SymbolicNamedDimArrayScale() => hash_tensor(t, h)
     SymbolicNamedDimArrayContract() => hash_contract_or_sum(t, h)
@@ -499,7 +533,7 @@ removing information about the order of operations.
 """
 function flatten_expr(t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() => t
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => t
     SymbolicNamedDimArrayScale() => coefficient(t) * flatten_expr(unscale(t))
     SymbolicNamedDimArrayContract() =>
       SymbolicNamedDimArrayContract(flatten_expr.(leaf_arguments(t)))
@@ -513,6 +547,7 @@ end
 
 function optimize_flattened_evaluation_order(alg, t::SymbolicNamedDimArrayExpr)
   @match t begin
+    # TODO: Add support for `Identity`.
     SymbolicNamedDimArray() => t
     SymbolicNamedDimArrayScale() =>
       coefficient(t) * optimize_evaluation_order(alg, unscale(t))
@@ -555,6 +590,83 @@ function optimize_flattened_contraction_order(alg::Eager, t::SymbolicNamedDimArr
   )
 end
 
+function isidentity(t::SymbolicNamedDimArrayExpr)
+  return @match t begin
+    SymbolicNamedDimIdentity() => true
+    _ => false
+  end
+end
+
+function replace_dimname_array(t, replacement)
+  new_dimnames = replace(dimnames(t), replacement)
+  return SymbolicNamedDimArray(name(t), named.(size(t), new_dimnames)...)
+end
+
+function replace_dimname_identity(t, replacement)
+  new_dimnames = replace(dimnames(t), replacement)
+  return SymbolicNamedDimIdentity(named.(size(t), new_dimnames)...)
+end
+
+# Replace one named dimension with another one.
+function replace_dimname(t::SymbolicNamedDimArrayExpr, replacement::Pair)
+  return @match t begin
+    SymbolicNamedDimArray() => replace_dimname_array(t, replacement)
+    SymbolicNamedDimIdentity() => replace_dimname_identity(t, replacement)
+    SymbolicNamedDimArrayScale() => coefficient(t) * replace_dimname(unscale(t), replacement)
+    SymbolicNamedDimArrayContract() => map_arguments(a -> replace_dimname(a, replacement), t)
+    SymbolicNamedDimArraySum() => map_arguments(a -> replace_dimname(a, replacement), t)
+  end
+end
+
+function simplify_contract(t)
+  simplified_args = copy(arguments(t))
+  id_index = findfirst(isidentity, simplified_args)
+  # TODO: Make this recursive with a `while` loop,
+  # call `findfirst(isidentity, simplified_args)` at
+  # the end of the loop to find the next identity.
+  while !isnothing(id_index)
+    id = simplified_args[id_index]
+    # Remove the identity tensor.
+    other_args = setdiff(simplified_args, [id])
+    for other_arg in other_args
+      shared_dimnames = dimnames(id) ∩ dimnames(other_arg)
+      if isone(length(shared_dimnames))
+        # TODO: Handle logic of contravariant and covariant (dual and non-dual)
+        # dimensions/axes, i.e. only allow contracting dual with non-dual.
+        # TODO: If the length is 2, this corresponds to a trace, maybe rewrite
+        # the expression using a trace or handle that in another special way.
+        shared_dimname = only(shared_dimnames)
+        id_dimname = only(setdiff(dimnames(id), dimnames(other_arg)))
+        # Replace the dimension.
+        # TODO: Do this using axes to handle more sophisticated
+        # cases like blocked or graded spaces, offset axes, etc.
+        other_arg_new = replace_dimname(other_arg, shared_dimname => id_dimname)
+        # Replace the tensor with the new tensor where the dimension
+        # is replaced.
+        simplified_args = replace(other_args, other_arg => other_arg_new)
+        break
+      end
+    end
+    id_index = findfirst(isidentity, simplified_args)
+  end
+  t_simplified = SymbolicNamedDimArrayContract(simplified_args)
+  if isone(length(arguments(t_simplified)))
+    t_simplified = simplify(only(arguments(t_simplified)))
+  end
+  if !isexpr(t_simplified)
+    return t_simplified
+  end
+  return map_arguments(simplify, t_simplified)
+end
+
+function simplify(t::SymbolicNamedDimArrayExpr)
+  return @match t begin
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => t
+    SymbolicNamedDimArrayContract() => simplify_contract(t)
+    _ => map_arguments(simplify, t)
+  end
+end
+
 function print_op_arguments(io::IO, f::Function, t)
   print(io, "(")
   for (isfirst, term) in flagfirst(arguments(t))
@@ -567,7 +679,7 @@ end
 
 function Base.show(io::IO, t::SymbolicNamedDimArrayExpr)
   @match t begin
-    SymbolicNamedDimArray() => print(io, name(t), string(dimnames(t)))
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => print(io, name(t), string(dimnames(t)))
     SymbolicNamedDimArrayContract() => print_op_arguments(io, *, t)
     SymbolicNamedDimArraySum() => print_op_arguments(io, +, t)
     SymbolicNamedDimArrayScale() => print(io, coefficient(t), " * ", unscale(t))
