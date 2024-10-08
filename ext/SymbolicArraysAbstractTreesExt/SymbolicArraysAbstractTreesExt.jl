@@ -7,6 +7,7 @@ using SymbolicArrays:
   SymbolicNamedDimArrayExpr,
   SymbolicNamedDimArrayScale,
   SymbolicNamedDimArraySum,
+  SymbolicNamedDimIdentity,
   arguments,
   coefficient,
   unscale
@@ -20,7 +21,7 @@ end
 
 function AbstractTrees.nodevalue(t::SymbolicNamedDimArrayExpr)
   return @match t begin
-    SymbolicNamedDimArray() => t
+    SymbolicNamedDimArray() || SymbolicNamedDimIdentity() => t
     SymbolicNamedDimArrayContract() || SymbolicNamedDimArrayScale() => *
     SymbolicNamedDimArraySum() => +
   end

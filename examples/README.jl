@@ -13,9 +13,12 @@ using AbstractTrees: print_tree
 using SymbolicArrays:
   Name,
   SymbolicArray,
+  SymbolicIdentity,
+  SymbolicIsometry,
   expand,
   flatten_expr,
   optimize_evaluation_order,
+  simplify,
   substitute,
   time_complexity;
 
@@ -26,7 +29,7 @@ b = SymbolicArray(:b, 2, 2)
 
 # Define index/dimension/mode names:
 
-i, j, k, l, m = Name.((:i, :j, :k, :l, :m));
+i, j, k, l, m, n = Name.((:i, :j, :k, :l, :m, :n));
 
 # Construct symbolic tensor expressions involving contractions
 # and sums of tensors:
@@ -73,6 +76,12 @@ print_tree(r)
 r_sub = substitute(r, [a[i, j] * b[j, k] => c[i, k]])
 #-
 print_tree(r_sub)
+
+id = SymbolicIdentity(2)
+r = flatten_expr(a[i, j] * id[j, k] * b[k, l]) * id[l, m] * c[m, n]
+print_tree(r)
+#-
+print_tree(simplify(r))
 
 # In the future we plan to support more sophisticated
 # substitutions, for example substituting arrays independent
