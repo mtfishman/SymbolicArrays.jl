@@ -118,7 +118,7 @@ print_tree(flatten_expr(r))
 
 ````
 
-Optimize the evaluation order of the expression (by default uses an
+Optimize the evaluation order of the expression (by default it uses an
 eager optimizer, which isn't always optimal):
 
 ````julia
@@ -260,7 +260,7 @@ The following still need to be implemented:
 2. `dag(a[i, j])` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
 3. maybe change the storage of sum arguments from `Set` to `Vector` (though that might make some operations like expression
 comparison slower unless we sort arguments like is done in `Symbolics.jl`, but that may be difficult in general),
-4. make `SymbolicNamedDimArrayExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype,
+4. make `SymbolicNamedDimsArrayExpr` an `AbstractArray`/`AbstractNamedDimsArray` subtype,
 5. more evaluation order optimization backends,
 6. define more symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, isometric/unitary
 tensors, diagonal tensors, symmetric tensors, etc.,
@@ -323,8 +323,8 @@ converted to symbolic expressions, transformed in some way, and then converted b
 may even by wrapped into symbolic tensors or vice versa, the exact design is unclear at the moment and will require
 some investigation. Some of that will be easier to implement with the upcoming
 [redesign of the ITensor internals](https://github.com/ITensor/ITensors.jl/issues/1250), in particular basing
-ITensors off of a more general [AbstractNamedDimArray](https://github.com/ITensor/ITensors.jl/tree/v0.6.17/NDTensors/src/lib/NamedDimsArrays)
-interface, so that symbolic tensors and ITensors can both be `AbstractNamedDimArray` subtypes.
+ITensors off of a more general [AbstractNamedDimsArray](https://github.com/ITensor/ITensors.jl/tree/v0.6.17/NDTensors/src/lib/NamedDimsArrays)
+interface, so that symbolic tensors and ITensors can both be `AbstractNamedDimsArray` subtypes.
 
 ## Generating this README
 
