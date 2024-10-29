@@ -44,7 +44,7 @@ print_tree(expand(r))
 
 print_tree(flatten_expr(r))
 
-# Optimize the evaluation order of the expression (by default uses an
+# Optimize the evaluation order of the expression (by default it uses an
 # eager optimizer, which isn't always optimal):
 
 a = SymbolicArray(:a, 2, 3)
@@ -100,7 +100,7 @@ print_tree(r_sub)
 # 2. `dag(a[i, j])` for swapping contravariant and covariant dimensions/indices (and complex conjugating),
 # 3. maybe change the storage of sum arguments from `Set` to `Vector` (though that might make some operations like expression
 # comparison slower unless we sort arguments like is done in `Symbolics.jl`, but that may be difficult in general),
-# 4. make `SymbolicNamedDimArrayExpr` an `AbstractArray`/`AbstractNamedDimArray` subtype,
+# 4. make `SymbolicNamedDimsArrayExpr` an `AbstractArray`/`AbstractNamedDimsArray` subtype,
 # 5. more evaluation order optimization backends,
 # 6. define more symbolic array/tensor types, like zero tensors, identity tensors, delta/copy tensors, isometric/unitary
 # tensors, diagonal tensors, symmetric tensors, etc.,
@@ -110,7 +110,8 @@ print_tree(r_sub)
 # ### Visualization
 
 # Currently you can visualize an expression tree/directed acyclic graph (DAG) of tensor operations using
-# `AbstractTrees.print_tree` as shown above. In addition, the goal will be to support using
+# [`AbstractTrees.print_tree`](https://github.com/JuliaCollections/AbstractTrees.jl?tab=readme-ov-file#examples)
+# as shown above. In addition, the goal will be to support using
 # [GraphMakie.jl](https://graph.makie.org/stable/generated/syntaxtree) to visualize the tensor expression
 # as a graph by converting the expression tree/DAG to a graph. See [this section](https://graph.makie.org/stable/generated/syntaxtree)
 # of the `GraphMakie.jl` documentation as a reference, as well as [TreeView.jl](https://github.com/JuliaTeX/TreeView.jl)
@@ -128,7 +129,7 @@ print_tree(r_sub)
 # [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl),
 # [cotengra](https://github.com/jcmgray/cotengra), [TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#Contraction-order-specification-and-optimisation),
 # [MetaTheory.jl](https://juliasymbolics.github.io/Metatheory.jl/dev/egraphs/#Extracting-from-an-EGraph), etc.),
-# 2. computing first and higher order derivatives of tensor networks (see [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
+# 2. computing first and higher order derivatives of tensor networks (see [https://arxiv.org/abs/1310.8023](https://arxiv.org/abs/1310.8023), [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
 # 3. common subexpression elimination (see [CommonSubexpressions.jl](https://github.com/rdeits/CommonSubexpressions.jl)),
 # 4. parallelization over independent operations (see [Dagger.jl](https://github.com/JuliaParallel/Dagger.jl)),
 #
@@ -163,8 +164,8 @@ print_tree(r_sub)
 # may even by wrapped into symbolic tensors or vice versa, the exact design is unclear at the moment and will require
 # some investigation. Some of that will be easier to implement with the upcoming
 # [redesign of the ITensor internals](https://github.com/ITensor/ITensors.jl/issues/1250), in particular basing
-# ITensors off of a more general [AbstractNamedDimArray](https://github.com/ITensor/ITensors.jl/tree/v0.6.17/NDTensors/src/lib/NamedDimsArrays)
-# interface, so that symbolic tensors and ITensors can both be `AbstractNamedDimArray` subtypes.
+# ITensors off of a more general [AbstractNamedDimsArray](https://github.com/ITensor/ITensors.jl/tree/v0.6.17/NDTensors/src/lib/NamedDimsArrays)
+# interface, so that symbolic tensors and ITensors can both be `AbstractNamedDimsArray` subtypes.
 
 # ## Generating this README
 

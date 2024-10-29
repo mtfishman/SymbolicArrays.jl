@@ -28,7 +28,7 @@ a = SymbolicArray(:a, 2, 2)
 ````
 
 ````
-2×2 SymbolicArray{Any, 2, Symbol}:
+2×2 SymbolicArrays.SymbolicArray{Any, 2, Symbol}:
 a
 ````
 
@@ -37,7 +37,7 @@ b = SymbolicArray(:b, 2, 2)
 ````
 
 ````
-2×2 SymbolicArray{Any, 2, Symbol}:
+2×2 SymbolicArrays.SymbolicArray{Any, 2, Symbol}:
 b
 ````
 
@@ -270,7 +270,8 @@ and more.
 ### Visualization
 
 Currently you can visualize an expression tree/directed acyclic graph (DAG) of tensor operations using
-`AbstractTrees.print_tree` as shown above. In addition, the goal will be to support using
+[`AbstractTrees.print_tree`](https://github.com/JuliaCollections/AbstractTrees.jl?tab=readme-ov-file#examples)
+as shown above. In addition, the goal will be to support using
 [GraphMakie.jl](https://graph.makie.org/stable/generated/syntaxtree) to visualize the tensor expression
 as a graph by converting the expression tree/DAG to a graph. See [this section](https://graph.makie.org/stable/generated/syntaxtree)
 of the `GraphMakie.jl` documentation as a reference, as well as [TreeView.jl](https://github.com/JuliaTeX/TreeView.jl)
@@ -288,7 +289,7 @@ The goal is to support a wider range of code transformations, such as:
 [OMEinsumContractionOrders.jl](https://github.com/TensorBFS/OMEinsumContractionOrders.jl),
 [cotengra](https://github.com/jcmgray/cotengra), [TensorOperations.jl](https://jutho.github.io/TensorOperations.jl/stable/man/indexnotation/#Contraction-order-specification-and-optimisation),
 [MetaTheory.jl](https://juliasymbolics.github.io/Metatheory.jl/dev/egraphs/#Extracting-from-an-EGraph), etc.),
-2. computing first and higher order derivatives of tensor networks (see [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
+2. computing first and higher order derivatives of tensor networks (see [https://arxiv.org/abs/1310.8023](https://arxiv.org/abs/1310.8023), [AutoHoot](https://github.com/LinjianMa/AutoHOOT)),
 3. common subexpression elimination (see [CommonSubexpressions.jl](https://github.com/rdeits/CommonSubexpressions.jl)),
 4. parallelization over independent operations (see [Dagger.jl](https://github.com/JuliaParallel/Dagger.jl)),
 
