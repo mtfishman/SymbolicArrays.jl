@@ -1,4 +1,3 @@
 [deps]
 AbstractTrees = "1520ce14-60c1-5f80-bbc7-55ef81b5835c"
-Moshi = "2e0e35c7-a2e4-4343-998d-7ef72827ed2d"
 SymbolicArrays = "89b603bc-5db9-4369-8dcc-3f453fd67cca"
